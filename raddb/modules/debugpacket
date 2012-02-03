@@ -1,0 +1,17 @@
+#
+# debugpacket
+#
+# This module is for debugging only, and should not be used in a
+# production server (it just wastes CPU cycles).
+#
+# Calling 'debugpacket' in any section of a virtual server will
+# print out all the request, reply, control and proxy value pairs
+# to the debug output.
+#
+# This module has no options. Uncomment below to enable, and add
+# in useful places in the virtual servers to actually get some
+# output when running radiusd -X.
+
+# debugpacket {
+# }
+
