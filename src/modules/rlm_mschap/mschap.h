@@ -6,6 +6,9 @@
 #include <freeradius-devel/ident.h>
 RCSIDH(mschap_h, "$Id$")
 
+#define NT_DIGEST_LENGTH 16
+#define LM_DIGEST_LENGTH 16
+
 void mschap_ntpwdhash (uint8_t *szHash, const char *szPassword);
 void mschap_challenge_hash( const uint8_t *peer_challenge,
 			    const uint8_t *auth_challenge,

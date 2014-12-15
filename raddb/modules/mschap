@@ -73,6 +73,29 @@ mschap {
 	#
 #	ntlm_auth_timeout = 10
 
+	# Enable use_winbind to send auth directly to winbind
+	# and not require ntlm_auth at all. Also configure
+	# ntlm_username and ntlm_domain below.
+	#
+	# WARNING - this requires Samba's libwbclient to be
+	# thread-safe, which by default it is not.
+	# For Samba 4 patches, see:
+	# https://lists.samba.org/archive/samba-technical/2015-January/104947.html
+	# For Samba 3.6 patch, see:
+	# https://gist.github.com/mcnewton/b9d4e9f43020243dcacf
+	#
+#	use_winbind = no
+	#
+	# Username and domain to pass to winbind.
+	#
+#	ntlm_username = "%{mschap:User-Name}"
+	#
+	# If the domain expands to nothing, no domain is sent.
+	# If the domain is empty or wrong, authentication may fail.
+	#
+#	ntlm_domain = "%{mschap:NT-Domain}"
+
+
 	# For Apple Server, when running on the same machine as
 	# Open Directory.  It has no effect on other systems.
 	#

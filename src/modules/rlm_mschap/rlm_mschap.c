@@ -35,6 +35,8 @@ RCSID("$Id$")
 
 #include	"mschap.h"
 #include	"smbdes.h"
+#include	"rlm_mschap.h"
+#include	"auth_wbclient.h"
 
 #ifdef __APPLE__
 extern int od_mschap_auth(REQUEST *request, VALUE_PAIR *challenge, VALUE_PAIR * usernamepair);
@@ -52,6 +54,11 @@ extern int od_mschap_auth(REQUEST *request, VALUE_PAIR *challenge, VALUE_PAIR * 
 #define ACB_SVRTRUST   0x0100  /* 1 = Server trust account */
 #define ACB_PWNOEXP    0x0200  /* 1 = User password does not expire */
 #define ACB_AUTOLOCK   0x0400  /* 1 = Account auto locked */
+
+/* ntlm auth methods */
+#define NTLM_AUTH_EXEC 1
+#define NTLM_WINBIND 2
+
 
 static int pdb_decode_acct_ctrl(const char *p)
 {
@@ -126,24 +133,6 @@ static int pdb_decode_acct_ctrl(const char *p)
 
 	return acct_ctrl;
 }
-
-
-typedef struct rlm_mschap_t {
-	int use_mppe;
-	int require_encryption;
-        int require_strong;
-        int with_ntdomain_hack;	/* this should be in another module */
-	char *passwd_file;
-	const char *xlat_name;
-	char *ntlm_auth;
-	int ntlm_auth_timeout;
-	const char *auth_type;
-	int allow_retry;
-	char *retry_msg;
-#ifdef __APPLE__
-	int  open_directory;
-#endif  
-} rlm_mschap_t;
 
 
 /*
@@ -542,6 +531,12 @@ static const CONF_PARSER module_config[] = {
 	  offsetof(rlm_mschap_t, allow_retry), NULL,  "yes" },
 	{ "retry_msg",   PW_TYPE_STRING_PTR,
 	  offsetof(rlm_mschap_t, retry_msg), NULL,  NULL },
+	{ "use_winbind",     PW_TYPE_BOOLEAN,
+	  offsetof(rlm_mschap_t,use_winbind), NULL, "no" },
+	{ "ntlm_username",   PW_TYPE_STRING_PTR,
+	  offsetof(rlm_mschap_t, ntlm_username), NULL,  "%{mschap:User-Name}" },
+	{ "ntlm_domain",   PW_TYPE_STRING_PTR,
+	  offsetof(rlm_mschap_t, ntlm_domain), NULL,  NULL },
 #ifdef __APPLE__
 	{ "use_open_directory",    PW_TYPE_BOOLEAN,
 	  offsetof(rlm_mschap_t,open_directory), NULL, "yes" },
@@ -688,7 +683,8 @@ static int do_mschap(rlm_mschap_t *inst,
 	/*
 	 *	Do normal authentication.
 	 */
-	if (!do_ntlm_auth) {
+	switch (do_ntlm_auth) {
+	case 0:
 		/*
 		 *	No password: can't do authentication.
 		 */
@@ -712,7 +708,10 @@ static int do_mschap(rlm_mschap_t *inst,
 		} else {
 			memset(nthashhash, 0, 16);
 		}
-	} else {		/* run ntlm_auth */
+		break;
+
+	case 1:
+	{		/* run ntlm_auth */
 		int	result;
 		char	buffer[256];
 
@@ -775,6 +774,15 @@ static int do_mschap(rlm_mschap_t *inst,
 			RDEBUG2("Invalid output from ntlm_auth: NT_KEY has non-hex values");
 			return -1;
 		}
+	}
+		break;
+	case 2:
+		/* winbind */
+		return do_auth_wbclient(inst, request, challenge, response, nthashhash);
+		break;
+	default:
+		RDEBUG("Fatal internal error - this line should never be reached");
+		break;
 	}
 
 	return 0;
@@ -976,13 +984,23 @@ static int mschap_authenticate(void * instance, REQUEST *request)
 	char msch2resp[42];
 	char *username_string;
 	int chap = 0;
-	int		do_ntlm_auth;
+	int do_ntlm_auth = 0;
 
 	/*
 	 *	If we have ntlm_auth configured, use it unless told
 	 *	otherwise
 	 */
-	do_ntlm_auth = (inst->ntlm_auth != NULL);
+	if (inst->ntlm_auth != NULL) {
+		do_ntlm_auth = NTLM_AUTH_EXEC;
+	}
+
+	/*
+	 *	use_winbind overrides ntlm_auth
+	 *	(unless overridden at runtime below)
+	 */
+	if (inst->use_winbind) {
+		do_ntlm_auth = NTLM_WINBIND;
+	}
 
 	/*
 	 *	If we have an ntlm_auth configuration, then we may

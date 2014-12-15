@@ -5,11 +5,11 @@
 #
 
 TARGET		= rlm_mschap
-SRCS		= rlm_mschap.c mschap.c smbdes.c opendir.c
+SRCS		= rlm_mschap.c mschap.c smbdes.c opendir.c auth_wbclient.c
 HEADERS		= mschap.h smbdes.h
 RLM_CFLAGS	=
 RLM_LDFLAGS	=
-RLM_LIBS	=
+RLM_LIBS	= -lwbclient
 RLM_UTILS   	= smbencrypt$(EXEEXT)
 RLM_INSTALL 	= smbencrypt-install
 
