@@ -39,6 +39,7 @@ RCSID("$Id$")
 static const CONF_PARSER group_config[] = {
 	{ FR_CONF_OFFSET("group_search_username", PW_TYPE_TMPL, rlm_winbind_t, group_username) },
 	{ FR_CONF_OFFSET("group_add_domain", PW_TYPE_BOOLEAN, rlm_winbind_t, group_add_domain), .dflt = "yes" },
+	{ FR_CONF_OFFSET("group_compare_domain", PW_TYPE_BOOLEAN, rlm_winbind_t, group_compare_domain), .dflt = "no" },
 	{ FR_CONF_OFFSET("group_attribute", PW_TYPE_STRING, rlm_winbind_t, group_attribute) },
 	CONF_PARSER_TERMINATOR
 };
@@ -184,6 +185,7 @@ static int winbind_group_cmp(void *instance, REQUEST *request, VALUE_PAIR *attr,
 
 	if (rcode) goto finish;
 	rcode = 1;
+
 
 	/*
 	 *	See if any of the groups match

@@ -21,6 +21,7 @@ typedef struct rlm_winbind_t {
 	/* group config */
 	vp_tmpl_t		*group_username;
 	bool			group_add_domain;
+	bool			group_compare_domain;
 	char const		*group_attribute;
 } rlm_winbind_t;
 

@@ -41,13 +41,24 @@ winbind {
 		#
 		group_search_username = "%{%{Stripped-User-Name}:-%{User-Name}}"
 
-		# Include the domain in group searches?
+		# Add the domain to the username when searching?
 		#
 		# When this is enabled, winbind_domain is prepended to the
 		# username (as domain\username) before searching. This is
 		# generally required.
 		#
 		#group_add_domain = yes
+
+		# Include the domain when checking group membership?
+		#
+		# Groups returned from winbind are prepended by the domain,
+		# e.g. 'domain\group name'. The default behaviour is to
+		# strip the domain off before comparing the group name.
+		#
+		# Setting this option to 'yes' will compare the entire
+		# group name including the domain.
+		#
+		#group_compare_domain = no
 
 		# Attribute to use for group comparisons.
 		#
