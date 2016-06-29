@@ -938,6 +938,7 @@ ssize_t tmpl_afrom_str(TALLOC_CTX *ctx, vp_tmpl_t **out, char const *in, size_t 
 	PW_TYPE data_type = PW_TYPE_STRING;
 	vp_tmpl_t *vpt = NULL;
 	value_data_t data;
+	regex_t *preg;
 
 	switch (type) {
 	case T_BARE_WORD:
@@ -1035,7 +1036,21 @@ ssize_t tmpl_afrom_str(TALLOC_CTX *ctx, vp_tmpl_t **out, char const *in, size_t 
 
 	case T_OP_REG_EQ: /* hack */
 		vpt = tmpl_alloc(ctx, TMPL_TYPE_REGEX, in, inlen);
-		slen = vpt->len;
+
+		if (strchr(in, '%') || strchr(in, '$')) {
+			/* hack2: quite likely xlat, so don't expand now */
+			slen = vpt->len;
+		} else {
+			/* hack3: probably not xlat, expand now as TMPL_TYPE_REGEX is deprecated */
+			slen = regex_compile(vpt, &preg, vpt->name, vpt->len,
+					     vpt->tmpl_iflag, vpt->tmpl_mflag, true, false);
+			if (slen <= 0) {
+				WARN("Error parsing regular expression /%s/", in);
+				return 0;
+			}
+			vpt->type = TMPL_TYPE_REGEX_STRUCT;
+			vpt->tmpl_preg = preg;
+		}
 		break;
 
 	default:
