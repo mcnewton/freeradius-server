@@ -1,0 +1,74 @@
+xlats
+=====
+
+FreeRADIUS often permits strings to be "expanded" to a fuller
+value. For instance, the following string
+
+    "The user name is %{User-Name}"
+
+might, whilst processing a request where the User-Name request
+attribute is "guestuser", be expanded to:
+
+    "The user name is guestuser"
+
+xlats are additional functionality further than just expanding
+attributes; they can do string and number processing, or database
+lookups. Although the FreeRADIUS core defines some xlat functions,
+many are created by different modules. So, for instance, the
+`rlm_ldap` module defines xlats to do LDAP group lookups, whereas
+the `rlm_sql` module adds the ability to directly call SQL
+statements.
+
+This adds some very powerful functionality to the unlang
+configuration. A list of xlats is shown below.
+
+List of basic xlats
+-------------------
+
+~~
+proto_dhcp	"dhcp_options"
+proto_dhcp	"dhcp"
+rlm_cache	inst->config.name
+rlm_date	inst->xlat_name
+rlm_exec	inst->name
+rlm_expr	inst->xlat_name
+rlm_expr	"rand"
+rlm_expr	"randstr"
+rlm_expr	"urlquote"
+rlm_expr	"urlunquote"
+rlm_expr	"escape"
+rlm_expr	"unescape"
+rlm_expr	"tolower"
+rlm_expr	"toupper"
+rlm_expr	"md5"
+rlm_expr	"sha1"
+rlm_expr	"sha256"
+rlm_expr	"sha512"
+rlm_expr	"hmacmd5"
+rlm_expr	"hmacsha1"
+rlm_expr	"pairs"
+rlm_expr	"base64"
+rlm_expr	"base64tohex"
+rlm_expr	"explode"
+rlm_expr	"nexttime"
+rlm_expr	"lpad"
+rlm_expr	"rpad"
+rlm_idn		inst->xlat_name
+rlm_json	"jsonquote"
+rlm_json	"jpathvalidate"
+rlm_ldap	inst->name
+rlm_ldap	"ldapquote"
+rlm_ldap	"ldap_escape"
+rlm_ldap	"ldap_unescape"
+rlm_mschap	inst->xlat_name
+rlm_perl	xlat_name
+rlm_redis	inst->name
+rlm_rest	inst->xlat_name
+rlm_soh		inst->xlat_name
+rlm_sql		inst->name
+rlm_unbound	if (inst->xlat_a_name
+rlm_unbound	    inst->xlat_aaaa_name
+rlm_unbound	    inst->xlat_ptr_name
+rlm_unpack	"unpack"
+rlm_yubikey	"modhextohex"
+
