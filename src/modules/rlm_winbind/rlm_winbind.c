@@ -76,6 +76,8 @@ static int winbind_group_cmp(void *instance, REQUEST *request, VALUE_PAIR *attr,
 	char const		*domain = NULL;
 	size_t			domain_len = 0;
 	char const		*user = NULL;
+
+	char const		*user_and_domain = NULL;
 	char const		*username;
 
 	ssize_t			slen;
@@ -95,12 +97,12 @@ static int winbind_group_cmp(void *instance, REQUEST *request, VALUE_PAIR *attr,
 	 */
 
 	/*
-	 *	Include the domain in the username?
+	 *	See if we have got a domain name.
 	 */
 	if (inst->group_add_domain && inst->wb_domain) {
 		slen = tmpl_aexpand(request, &domain, request, inst->wb_domain, NULL, NULL);
 		if (slen < 0) {
-			REDEBUG("Unable to expand group_search_username");
+			REDEBUG("Unable to expand winbind domain");
 			goto error;
 		}
 		domain_len = (size_t)slen;
@@ -116,20 +118,27 @@ static int winbind_group_cmp(void *instance, REQUEST *request, VALUE_PAIR *attr,
 			goto error;
 		}
 	} else {
+		user = attr->vp_strvalue;
+	}
+
+	/*
+	 *	Find out which version of the username to use.
+	 */
+	if (domain) {
+	 	/*
+		 *	Include the domain in the username.
+		 */
+		user_and_domain = talloc_asprintf(user, "%s\\%s", domain, user);
+
+		username = user_and_domain;
+	} else {
 		/*
 		 *	This is quite unlikely to work without a domain, but
 		 *	we've not been given much else to work on.
 		 */
-		if (!domain) {
-			RWDEBUG("Searching group with plain username, this will probably fail");
-			RWDEBUG("Ensure winbind_domain and group_search_username are both correctly set");
-		}
-		user = attr->vp_strvalue;
-	}
+		RWDEBUG("Searching group with plain username, this will probably fail;");
+		RWDEBUG("ensure winbind_domain and group_search_username are both correctly set.");
 
-	if (domain) {
-		username = talloc_asprintf(user, "%s\\%s", domain, user);
-	} else {
 		username = user;
 	}
 
@@ -235,6 +244,7 @@ finish:
 	fr_connection_release(inst->wb_pool, request, wb_ctx);
 
 error:
+	rad_const_free(user_and_domain);
 	rad_const_free(user);
 	rad_const_free(domain);
 	REXDENT();
