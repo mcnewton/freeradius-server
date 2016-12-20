@@ -652,6 +652,118 @@ finish:
 	return rcode;
 }
 
+/*
+ *	Send recv-coa info to a REST API endpoint
+ */
+static rlm_rcode_t CC_HINT(nonnull) mod_recv_coa(void *instance, REQUEST *request)
+{
+	rlm_rest_t *inst = instance;
+	rlm_rest_section_t *section = &inst->recv_coa;
+
+	void *handle;
+	int hcode;
+	int rcode = RLM_MODULE_OK;
+	int ret;
+
+	if (!section->name) return RLM_MODULE_NOOP;
+
+	handle = fr_connection_get(inst->pool);
+	if (!handle) return RLM_MODULE_FAIL;
+
+	ret = rlm_rest_perform(inst, section, handle, request, NULL, NULL);
+	if (ret < 0) {
+		rcode = RLM_MODULE_FAIL;
+		goto finish;
+	}
+
+	hcode = rest_get_handle_code(handle);
+	if (hcode >= 500) {
+		rcode = RLM_MODULE_FAIL;
+	} else if (hcode == 204) {
+		rcode = RLM_MODULE_OK;
+	} else if ((hcode >= 200) && (hcode < 300)) {
+		ret = rest_response_decode(inst, section, request, handle);
+		if (ret < 0) 	   rcode = RLM_MODULE_FAIL;
+		else if (ret == 0) rcode = RLM_MODULE_OK;
+		else		   rcode = RLM_MODULE_UPDATED;
+	} else {
+		rcode = RLM_MODULE_INVALID;
+	}
+
+finish:
+	switch (rcode) {
+	case RLM_MODULE_INVALID:
+	case RLM_MODULE_FAIL:
+		rest_response_error(request, handle);
+		break;
+
+	default:
+		break;
+	}
+
+	rlm_rest_cleanup(inst, section, handle);
+
+	fr_connection_release(inst->pool, handle);
+
+	return rcode;
+}
+
+/*
+ *	Send send-coa info to a REST API endpoint
+ */
+static rlm_rcode_t CC_HINT(nonnull) mod_send_coa(void *instance, REQUEST *request)
+{
+	rlm_rest_t *inst = instance;
+	rlm_rest_section_t *section = &inst->send_coa;
+
+	void *handle;
+	int hcode;
+	int rcode = RLM_MODULE_OK;
+	int ret;
+
+	if (!section->name) return RLM_MODULE_NOOP;
+
+	handle = fr_connection_get(inst->pool);
+	if (!handle) return RLM_MODULE_FAIL;
+
+	ret = rlm_rest_perform(inst, section, handle, request, NULL, NULL);
+	if (ret < 0) {
+		rcode = RLM_MODULE_FAIL;
+		goto finish;
+	}
+
+	hcode = rest_get_handle_code(handle);
+	if (hcode >= 500) {
+		rcode = RLM_MODULE_FAIL;
+	} else if (hcode == 204) {
+		rcode = RLM_MODULE_OK;
+	} else if ((hcode >= 200) && (hcode < 300)) {
+		ret = rest_response_decode(inst, section, request, handle);
+		if (ret < 0) 	   rcode = RLM_MODULE_FAIL;
+		else if (ret == 0) rcode = RLM_MODULE_OK;
+		else		   rcode = RLM_MODULE_UPDATED;
+	} else {
+		rcode = RLM_MODULE_INVALID;
+	}
+
+finish:
+	switch (rcode) {
+	case RLM_MODULE_INVALID:
+	case RLM_MODULE_FAIL:
+		rest_response_error(request, handle);
+		break;
+
+	default:
+		break;
+	}
+
+	rlm_rest_cleanup(inst, section, handle);
+
+	fr_connection_release(inst->pool, handle);
+
+	return rcode;
+}
+
 static int parse_sub_section(CONF_SECTION *parent, rlm_rest_section_t *config, rlm_components_t comp)
 {
 	CONF_SECTION *cs;
@@ -824,6 +936,11 @@ static int mod_instantiate(CONF_SECTION *conf, void *instance)
 		(parse_sub_section(conf, &inst->authenticate, MOD_AUTHENTICATE) < 0) ||
 		(parse_sub_section(conf, &inst->accounting, MOD_ACCOUNTING) < 0) ||
 
+#ifdef WITH_COA
+		(parse_sub_section(conf, &inst->recv_coa, MOD_RECV_COA) < 0) ||
+		(parse_sub_section(conf, &inst->send_coa, MOD_SEND_COA) < 0) ||
+#endif
+
 /* @todo add behaviour for checksimul */
 /*		(parse_sub_section(conf, &inst->checksimul, MOD_SESSION) < 0) || */
 		(parse_sub_section(conf, &inst->post_auth, MOD_POST_AUTH) < 0))
@@ -885,6 +1002,8 @@ module_t rlm_rest = {
 		[MOD_AUTHENTICATE]	= mod_authenticate,
 		[MOD_AUTHORIZE]		= mod_authorize,
 		[MOD_ACCOUNTING]	= mod_accounting,
-		[MOD_POST_AUTH]		= mod_post_auth
+		[MOD_POST_AUTH]		= mod_post_auth,
+		[MOD_RECV_COA]		= mod_recv_coa,
+		[MOD_SEND_COA]		= mod_send_coa
 	},
 };

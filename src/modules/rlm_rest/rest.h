@@ -161,6 +161,8 @@ typedef struct rlm_rest_t {
 	rlm_rest_section_t	checksimul;	//!< Configuration specific to simultaneous session
 						//!< checking.
 	rlm_rest_section_t	post_auth;	//!< Configuration specific to Post-auth
+	rlm_rest_section_t	recv_coa;	//!< Configuration specific to recv-coa
+	rlm_rest_section_t	send_coa;	//!< Configuration specific to send-coa
 } rlm_rest_t;
 
 /*
