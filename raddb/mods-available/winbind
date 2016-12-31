@@ -55,6 +55,15 @@ winbind {
 		# unnamed, otherwise it will be "name-Winbind-Group". The
 		# name of this attribute can be overridden here.
 		#
+		# As this group check depends on Samba's caching being
+		# up-to-date, the data Samba has cached may also affect
+		# success. As a result, this attribute should normally only
+		# be used after a successful authentication, e.g. in
+		# post-auth.
+		#
+		# Nested and other complex group arrangements may also not
+		# check correctly with the group comparison attribute.
+		#
 		#group_attribute = "Winbind-Group"
 	}
 

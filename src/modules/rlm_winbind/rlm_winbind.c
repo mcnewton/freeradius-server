@@ -91,6 +91,23 @@ static int winbind_group_cmp(void *instance, REQUEST *request, VALUE_PAIR *attr,
 	}
 
 	/*
+	 *	According to the Samba people, group comparisons are frought
+	 *	with danger due to the AD complexity (nested groups etc). The
+	 *	only real reliable way is to check SIDs returned from a successful
+	 *	auth. However, independent group comparisons are particularly
+	 *	useful for a lot of people and are probably OK in setups that
+	 *	don't use nested groups etc. It basically depends on what data has
+	 *	been cached already by Samba. So this code gives a warning that
+	 *	the results might not be OK except after a successful auth (and may
+	 *	not even be reliable then, sadly).
+	 */
+	if (request->component && strcmp(request->component, "post-auth")) {
+		RWDEBUG("Using rlm_winbind group compare before a successful");
+		RWDEBUG("authentication may not reliable. This should normally");
+		RWDEBUG("be used in post-auth only.");
+	}
+
+	/*
 	 *	Work out what username to check groups for, made up from
 	 *	either winbind_domain and either group_search_username or
 	 *	just User-Name.
