@@ -186,7 +186,7 @@ int compute_password_element(pwd_session_t *session, uint16_t grp_num,
 	hmac_ctx = HMAC_CTX_new();
 	ctr = 0;
 	for (;;) {
-		if (ctr > 10) {
+		if (ctr > 100) {
 			ERROR("Unable to find random point on curve for group %d, something's fishy", grp_num);
 			goto error;
 		}
