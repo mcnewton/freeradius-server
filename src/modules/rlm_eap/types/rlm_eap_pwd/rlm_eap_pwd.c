@@ -57,8 +57,6 @@ static int mod_detach (void *arg)
 
 	inst = (eap_pwd_t *) arg;
 
-	if (inst->bnctx) BN_CTX_free(inst->bnctx);
-
 	return 0;
 }
 
@@ -81,11 +79,6 @@ static int mod_instantiate (CONF_SECTION *cs, void **instance)
 		return -1;
 	}
 
-	if ((inst->bnctx = BN_CTX_new()) == NULL) {
-		cf_log_err_cs(cs, "Failed to get BN context");
-		return -1;
-	}
-
 	return 0;
 }
 
@@ -101,6 +94,7 @@ static int _free_pwd_session (pwd_session_t *session)
 	EC_POINT_clear_free(session->pwe);
 	BN_clear_free(session->order);
 	BN_clear_free(session->prime);
+	BN_CTX_free(session->bnctx);
 
 	return 0;
 }
@@ -225,6 +219,12 @@ static int mod_session_init (void *instance, eap_session_t *eap_session)
 	session->pwe = NULL;
 	session->order = NULL;
 	session->prime = NULL;
+
+	session->bnctx = BN_CTX_new();
+	if (session->bnctx == NULL) {
+		ERROR("rlm_eap_pwd: Failed to get BN context");
+		return 0;
+	}
 
 	/*
 	 *	The admin can dynamically change the MTU.
@@ -492,7 +492,7 @@ static int mod_process(void *arg, eap_session_t *eap_session)
 		/*
 		 * compute our scalar and element
 		 */
-		if (compute_scalar_element(session, inst->bnctx)) {
+		if (compute_scalar_element(session, session->bnctx)) {
 			DEBUG2("failed to compute server's scalar and element");
 			return 0;
 		}
@@ -505,7 +505,8 @@ static int mod_process(void *arg, eap_session_t *eap_session)
 		/*
 		 * element is a point, get both coordinates: x and y
 		 */
-		if (!EC_POINT_get_affine_coordinates_GFp(session->group, session->my_element, x, y, inst->bnctx)) {
+		if (!EC_POINT_get_affine_coordinates_GFp(session->group, session->my_element, x, y,
+							 session->bnctx)) {
 			DEBUG2("server point assignment failed");
 			BN_clear_free(x);
 			BN_clear_free(y);
@@ -546,16 +547,16 @@ static int mod_process(void *arg, eap_session_t *eap_session)
 		/*
 		 * process the peer's commit and generate the shared key, k
 		 */
-		if (process_peer_commit(session, in, in_len, inst->bnctx)) {
-			RDEBUG2("Failed to process peer's commit");
+		if (process_peer_commit(session, in, in_len, session->bnctx)) {
+			RDEBUG2("failed to process peer's commit");
 			return 0;
 		}
 
 		/*
 		 *	Compute our confirm blob
 		 */
-		if (compute_server_confirm(session, session->my_confirm, inst->bnctx)) {
-			ERROR("Failed to compute confirm!");
+		if (compute_server_confirm(session, session->my_confirm, session->bnctx)) {
+			ERROR("rlm_eap_pwd: failed to compute confirm!");
 			return 0;
 		}
 
@@ -582,7 +583,7 @@ static int mod_process(void *arg, eap_session_t *eap_session)
 			RDEBUG2("pwd exchange is incorrect: not commit!");
 			return 0;
 		}
-		if (compute_peer_confirm(session, peer_confirm, inst->bnctx)) {
+		if (compute_peer_confirm(session, peer_confirm, session->bnctx)) {
 			RDEBUG2("pwd exchange cannot compute peer's confirm");
 			return 0;
 		}
