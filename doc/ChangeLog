@@ -1,3 +1,11 @@
+FreeRADIUS 3.0.20+el6-1 Fri 10 Jan 2020 10:30:00 GMT urgency=medium
+	Feature improvements
+	* This release is v3.0.20 with patches to the RPM spec
+	  file to build on CentOS 6: cee79d930c 882233af92 7c31000aae
+
+	Bug fixes
+	* None
+
 FreeRADIUS 3.0.20 Thu 14 Nov 2019 12:00:00 EDT urgency=medium
 	Feature improvements
 	* Add Jenkins continuous integration.  Fixes #2620.
