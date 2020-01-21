@@ -148,8 +148,10 @@ int fr_json_object_to_value_box(TALLOC_CTX *ctx, fr_value_box_t *out, json_objec
  *
  * @param[in] ctx	to allocate temporary buffers in
  * @param[in] data	to convert.
+ * @param[in] as_string	always create string object
  */
-json_object *json_object_from_value_box(TALLOC_CTX *ctx, fr_value_box_t const *data)
+json_object *json_object_from_value_box(TALLOC_CTX *ctx, fr_value_box_t const *data,
+					bool as_string)
 {
 	/*
 	 *	We're converting to PRESENTATION format
@@ -162,6 +164,12 @@ json_object *json_object_from_value_box(TALLOC_CTX *ctx, fr_value_box_t const *d
 		enumv = fr_dict_enum_by_value(data->enumv, data);
 		if (enumv) return json_object_new_string(enumv->name);
 	}
+
+	/*
+	 *	Ability to force all objects to be string, which
+	 *	is a user-configurable option.
+	 */
+	if (as_string) goto do_string;
 
 	switch (data->type) {
 	default:
@@ -413,7 +421,7 @@ char *fr_json_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps, const char *pre
 			return NULL;
 		}
 
-		MEM(value = json_object_from_value_box(ctx, &vp->data));
+		MEM(value = json_object_from_value_box(ctx, &vp->data, false));
 		json_object_array_add(values, value);
 
 		/*
@@ -432,7 +440,7 @@ char *fr_json_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps, const char *pre
 				struct json_object *mapped_value;
 
 				/* Add to mapping array */
-				MEM(mapped_value = json_object_from_value_box(ctx, dv->value));
+				MEM(mapped_value = json_object_from_value_box(ctx, dv->value, false));
 				json_object_array_add(mapping, mapped_value);
 			/*
 			 *	Add NULL value to mapping array
