@@ -44,6 +44,19 @@ static fr_json_format_t const default_json_format = {
 };
 
 
+CONF_PARSER const fr_json_format_config[] = {
+	{ FR_CONF_OFFSET("output_as_array", FR_TYPE_BOOL, fr_json_format_t, format_array), .dflt = "no" },
+	{ FR_CONF_OFFSET("simple", FR_TYPE_BOOL, fr_json_format_t, simple), .dflt = "no" },
+	{ FR_CONF_OFFSET("include_attribute_type", FR_TYPE_BOOL, fr_json_format_t, include_type), .dflt = "yes" },
+	{ FR_CONF_OFFSET("attribute_values_as_array", FR_TYPE_BOOL, fr_json_format_t, value_as_list), .dflt = "no" },
+	{ FR_CONF_OFFSET("use_enum_values", FR_TYPE_BOOL, fr_json_format_t, enum_value), .dflt = "no" },
+	{ FR_CONF_OFFSET("force_always_string", FR_TYPE_BOOL, fr_json_format_t, always_string), .dflt = "no" },
+	{ FR_CONF_OFFSET("prefix", FR_TYPE_STRING, fr_json_format_t, prefix) },
+
+	CONF_PARSER_TERMINATOR
+};
+
+
 /** Convert json object to fr_value_box_t
  *
  * @param[in] ctx	to allocate any value buffers in (should usually be the same as out).
