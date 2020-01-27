@@ -4,8 +4,11 @@
 
 = JSON Module
 
-The `json` module registers a `map` function to allow mapping fields
-from JSON structures to attributes.
+The `json` module registers a `map` function to allow mapping fields from
+JSON structures to attributes. It also adds some xlats for processing and
+generating JSON documents.
+
+## JSON 'map' function
 
 The path through the JSON document's tree is specified with FR jpath,
 which is the FreeRADIUS implementation of the jpath grammar described
@@ -30,56 +33,117 @@ Selectors currently implemented are:
 ====
   * Automatic casting will occur between JSON and attribute types where possible.
   * Assignment of JSON objects/arrays to strings is supported, in which case the
- JSON serialized form of the object/array is used.
+  JSON serialized form of the object/array is used.
   * If a jpath matches multiple nodes, unless the map includes the `+=` operator
   * only the first node's value will be used.
   * If the map uses `+=` then multiple instances of the attribute will be created,
- each holding a different node value.
+  each holding a different node value.
 ====
+
+
+## Sample
+
+Assuming that the URL http://example.org/api/user/$username replies with
+some JSON content as below.
+
+[source, json]
+----
+{
+  "user": "bob",
+  "account number": 7124503,
+  "groups": [
+    "admin",
+    "networks",
+    "bob"
+  ]
+}
+----
+
+In this case, the `rest` module can be used to get the JSON data and the
+fields can be accessed using 'map' as shown in the example below.
+
+[source, unlang]
+----
+map json "%{rest:GET http://example.org/api/user/%{User-Name}" {
+  &Tmp-Integer-0  := '$.account number'
+  &Group          += '$.groups.*'
+}
+----
 
 
 
 ## Configuration Settings
 
-This module takes no configuration.
+
+
+The only options for the JSON module are to control the output
+format of the `json_encode` xlat.
 
 
 
+output_as_array:: output JSON document as an array, not an object
 
-## Sample
+The xlat normally outputs data as a JSON object. Enabling this
+option changes the output to an array.
 
-Assuming that you have the url http://example.org/api/user/$username
-service replying some JSON content as below.
 
-[source, json]
-----
-{
- "user": "bob",
- "account number": 7124503,
-   "groups": {
-     "admin",
-     "networks",
-     "bob"
-   }
- }
-}
-----
 
-Then, you can call using the module `rest` and access the JSON fields as below example.
+simple:: use a simpler output format
 
-[source, unlang]
-----
-map json "%{rest:GET http://example.org/api/user/%{User-Name}" {
- &Tmp-Integer-0  := '$.account number'
- &Group          += '$.groups.*'
-}
-----
+Each output format (object or array) can be simplified by
+enabling this option. In object mode the simple output is a
+dictionary of attributes to values. Simple array mode is a
+list of attribute values only.
+
+
+
+include_attribute_type:: include the data type of the attribute, if possible
+
+Where the output format allows it, enabling this option will
+include each attribute's data type in the JSON document.
+Where it can not be included in the output format, it will be
+ignored.
+
+
+
+attribute_values_as_array:: consolidate attribute values into an array
+
+If possible in the output format, any attributes which appear
+more than once will be output once in the JSON document with
+all the values in an array. The attribute will otherwise be
+duplicated multiple times.
+
+
+
+use_enum_values:: output the integer value of enumerated attributes
+
+Where an attribute has enum values, the textual
+representation of the value will normally be output. Enable
+this option to force the numeric value instead.
+
+
+
+force_always_string:: force all values to be strings
+
+Integer values are normally written to the JSON document as numbers (i.e.
+without quotes). Enable this option to force all values to be as quoted
+strings.
+
+
+
+prefix:: add a colon-delimited prefix to all attribute names
+
+The value of this option will be prepended to all attributes in the JSON
+document. For example, with a prefix of `test`, `link:https://freeradius.org/rfc/rfc2865.html#User-Name[User-Name]` will be output as
+`test:User-Name`.
+
+
 
 
 
 ## Expansions
 
-The rlm_json provides the below xlat's functions to handle the JSON string.
+rlm_json provides the below xlat functions to handle the JSON documents.
 
 ### %{jpathvalidate:...}
 
@@ -94,10 +158,10 @@ NOTE: Validate parser for everything except unions and expressions.
 [source,unlang]
 ----
 update control {
-    &Tmp-String-0 := '$.my.json.payload[1]'
+  &Tmp-String-0 := '$.my.json.payload[1]'
 }
 update reply {
-    &Reply-Message := "Validation of %{control:Tmp-String-0} is %{jpathvalidate:$.my.json.payload[1]}"
+  &Reply-Message := "Validation of %{control:Tmp-String-0} is %{jpathvalidate:$.my.json.payload[1]}"
 }
 ----
 
@@ -131,9 +195,270 @@ update reply {
 The string caipirinha/gelada should be caipirinha\\/gelada to be a valid JSON string.
 ```
 
+### %{json_encode:...}
+
+Generates a JSON document from a given list of attribute templates. The
+format of document generated can be controlled with the 'encode' section in
+the module configuration. Attribute values will automatically be escaped so
+they are JSON-safe.
+
+NOTE: The name of the xlat is based on the instance name of this module. If
+the module was defined as `json jdoc {...}`, then the xlat name will be
+`jdoc_encode`.
+
+The xlat should be passed a list of attributes to encode. Each attribute (after
+template expansion) will be added to a list of attributes to include in the JSON
+document. If any of the attributes given are preceeded with a `!` then they are
+removed from the list. Once all attributes have been processed, the JSON
+document will be created using this list.
+
+For example, the following will produce a JSON document with two attributes in
+it, `link:https://freeradius.org/rfc/rfc2865.html#User-Name[User-Name]` and `link:https://freeradius.org/rfc/rfc2865.html#Calling-Station-Id[Calling-Station-Id]`, from the RADIUS request:
+
+.Example
+
+```
+%{json_encode:&User-Name &Calling-Station-Id}
+```
+
+The following will include all attributes in the RADIUS request, except for
+`link:https://freeradius.org/rfc/rfc2865.html#User-Password[User-Password]`:
+
+.Example
+
+```
+%{json_encode:&request:[*] !&User-Password}
+```
+
+In another (contrived) example, all the attributes in the RADIUS request will
+be included in the document, _except_ any attributes in the RADIUS reply.
+`&User-Name` will be included from the control list, too, if it exists:
+
+.Example
+
+```
+%{json_encode:&request:[*] !&reply:[*] &control:User-Name}
+```
+
+#### Output format
+
+The default output format for the JSON encode xlat is as follows. The input
+for these examples is `%{json_encode:&request:[*] !&User-Password}`, with a
+request packet containing:
+
+.Example request packet
+
+```
+User-Name = "bob"
+User-Password = "letmein"
+Framed-MTU = 1500
+Login-IP-Host = "192.0.2.50"
+Login-IP-Host += "192.0.2.51"
+Login-Service = "Telnet"
+```
+
+The default output JSON document with no given options would be:
+
+.Output
+
+[source,json]
+----
+{
+  "User-Name":{
+    "type":"string",
+    "value":["bob"]
+  },
+  "Framed-MTU":{
+    "type":"uint32",
+    "value":[1500]
+  },
+  "Login-IP-Host":{
+    "type":"ipaddr",
+    "value":["192.0.2.50","192.0.2.51"]
+  },
+  "Login-Service":{
+    "type":"uint32",
+    "value":["Telnet"]
+  }
+}
+----
+
+NOTE: In the JSON document, "type" is the type of the _attribute_, which is
+not necessarily the same as the type of the "value" in the document. See e.g.
+`link:https://freeradius.org/rfc/rfc2865.html#Login-Service[Login-Service]` above, an enumerated value.
+
+#### Object output format examples: `output_as_array = no`
+
+The following examples assume the three attributes are being added to the
+JSON document:
+
+```
+User-Name = bob
+Filter-Id = ab
+Filter-Id = cd
+```
+
+.Output when `simple = no`, `include_attribute_type = yes`:
+
+[source,json]
+----
+{
+  "User-Name": {
+    "type":"string",
+    "value":["bob"]
+  },
+    "Filter-Id": {
+      "type":"string",
+      "value":["ab", "cd"]
+  }
+}
+----
+
+.Output when `simple = no`, `include_attribute_type = no`:
+
+[source,json]
+----
+{
+  "User-Name": {
+    "value":["bob"]
+  },
+    "Filter-Id": {
+    "value":["ab", "cd"]
+  }
+}
+----
+
+.Output when `simple = yes`, `attribute_values_as_array = no`:
+
+[source,json]
+----
+{
+  "User-Name": "bob",
+  "Filter-Id": ["ab", "cd"]
+}
+----
+
+.Output when `simple = yes`, `attribute_values_as_array = yes`:
+
+[source,json]
+----
+{
+  "User-Name": ["bob"],
+  "Filter-Id": ["ab", "cd"]
+}
+----
+
+#### Array output format examples: `output_as_array = yes`, `simple = yes`
+
+This output format does not include the attribute names. It is likely to be
+useful only when the attributes are individually specified and _guaranteed to
+exist_.
+
+For example, here, `%{json_encode:&Filter-Id[0] &User-Name &Filter-Id[1]}`
+
+.Output when `simple = yes`
+
+[source,json]
+----
+[
+  "ab",
+  "bob",
+  "cd"
+]
+----
+
+#### Array output format examples: `output_as_array = yes`, `simple = no`
+
+.Output when `include_attribute_type = yes`, `attribute_values_as_array = no`
+
+[source,json]
+----
+[
+  {
+    "name": "User-Name",
+    "type":"string",
+    "value": "bob"
+  },
+  {
+    "name": "Filter-Id",
+    "type": "string",
+    "value": "ab"
+  },
+  {
+    "name": "Filter-Id",
+    "type": "string",
+    "value": "cd"
+  }
+]
+----
+
+.Output when `include_attribute_type = yes`, `attribute_values_as_array = yes`
+
+[source,json]
+----
+[
+  {
+    "name": "User-Name",
+    "type": "string",
+    "value": "bob"
+  },
+  {
+    "name": "Filter-Id",
+    "type": "string",
+    "value": ["ab", "cd"]
+  }
+]
+----
+
+.Output when `include_attribute_type = no`, `attribute_values_as_array = no`
+
+[source,json]
+----
+[
+  {
+    "name": "User-Name",
+    "value": "bob"
+  },
+  {
+    "name": "Filter-Id",
+    "value": "ab"
+  },
+  {
+    "name": "Filter-Id",
+    "value": "cd"
+  }
+]
+----
+
+.Output when `include_attribute_type = no`, `attribute_values_as_array = yes`
+
+[source,json]
+----
+[
+  {
+    "name": "User-Name",
+    "value": "bob"
+  },
+  {
+    "name": "Filter-Id",
+    "value": ["ab", "cd"]
+  }
+]
+----
+
+
 == Default Configuration
 
 ```
 json {
+	encode_format {
+#		output_as_array = no
+#		simple = no
+#		include_attribute_type = yes
+#		attribute_values_as_array = no
+#		use_enum_values = no
+#		force_always_string = no
+#		prefix =
+	}
 }
 ```
