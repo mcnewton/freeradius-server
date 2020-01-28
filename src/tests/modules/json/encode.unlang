@@ -1,0 +1,328 @@
+#
+#	json_encode tests
+#
+
+# 0. Check basic xlat parsing
+
+update request {
+	&Tmp-String-1 := "%{json_encode:&request:[*]}"
+	&Tmp-String-2 := "%{json_encode:&request:[*] }"
+	&Tmp-String-3 := "%{json_encode: &request:[*]}"
+	&Tmp-String-4 := "%{json_encode: 	 &request:[*]	}"
+	&Tmp-String-5 := "%{json_encode: &request:[*]    !&User-Password }"
+	&Tmp-String-6 := "%{json_encode:&request:[*] ! }"
+}
+
+if (&Tmp-String-1 == '{"User-Name":{"type":"string","value":["john"]},"User-Password":{"type":"string","value":["testing123"]}}') {
+	test_pass
+} else {
+	test_fail
+}
+
+if (&Tmp-String-1 != &Tmp-String-2 ||
+    &Tmp-String-1 != &Tmp-String-3 ||
+    &Tmp-String-1 != &Tmp-String-4) {
+	test_fail
+}
+
+if (&Tmp-String-5 == '{"User-Name":{"type":"string","value":["john"]}}') {
+	test_pass
+} else {
+	test_fail
+}
+
+if (&Tmp-String-6 == '') {
+	test_pass
+} else {
+	test_fail
+}
+
+update request {
+	&Tmp-String-1 !* ANY
+	&Tmp-String-2 !* ANY
+	&Tmp-String-3 !* ANY
+	&Tmp-String-4 !* ANY
+	&Tmp-String-5 !* ANY
+	&Tmp-String-6 !* ANY
+}
+
+
+# 1. Empty expansions
+
+update request {
+	&Tmp-String-1 := "%{json_o_sn_tn_an_encode:!&request:[*]}"
+	&Tmp-String-2 := "%{json_o_sn_tn_an_encode:}"
+	&Tmp-String-3 := "%{json_a_sn_tn_an_encode:!&request:[*]}"
+	&Tmp-String-4 := "%{json_a_sn_tn_an_encode:}"
+}
+
+if (&Module-Failure-Message == 'Failed concatenating input: Invalid arguments.  List was NULL') {
+	test_pass
+} else {
+	test_fail
+}
+
+if (&Tmp-String-1 == '{}') {
+	test_pass
+} else {
+	test_fail
+}
+
+if (&Tmp-String-2 == '') {
+	test_pass
+} else {
+	test_fail
+}
+
+if (&Tmp-String-3 == '[]') {
+	test_pass
+} else {
+	test_fail
+}
+
+if (&Tmp-String-4 == '') {
+	test_pass
+} else {
+	test_fail
+}
+
+
+update request {
+	&Tmp-String-1 !* ANY
+	&Tmp-String-2 !* ANY
+	&Tmp-String-3 !* ANY
+	&Tmp-String-4 !* ANY
+	&Module-Failure-Message !* ANY
+}
+
+
+# 2. Check prefix, force_always_string, use_enum_values
+
+update request {
+	&Tmp-Integer-1 := "999"
+	&Service-Type := Login-User
+}
+
+update request {
+	&Tmp-String-1 := "%{json_encode:&User-Name}"
+	&Tmp-String-2 := "%{json_p_encode:&User-Name}"
+	&Tmp-String-3 := "%{json_encode:&Tmp-Integer-1}"
+	&Tmp-String-4 := "%{json_s_encode:&Tmp-Integer-1}"
+	&Tmp-String-5 := "%{json_encode:&Service-Type}"
+	&Tmp-String-6 := "%{json_e_encode:&Service-Type}"
+}
+
+
+if (&Tmp-String-1 == '{"User-Name":{"type":"string","value":["john"]}}') {
+        test_pass
+} else {
+        test_fail
+}
+
+if (&Tmp-String-2 == '{"test:User-Name":{"type":"string","value":["john"]}}') {
+        test_pass
+} else {
+        test_fail
+}
+
+if (&Tmp-String-3 == '{"Tmp-Integer-1":{"type":"uint32","value":[999]}}') {
+        test_pass
+} else {
+        test_fail
+}
+
+if (&Tmp-String-4 == '{"Tmp-Integer-1":{"type":"uint32","value":["999"]}}') {
+        test_pass
+} else {
+        test_fail
+}
+
+if (&Tmp-String-5 == '{"Service-Type":{"type":"uint32","value":["Login-User"]}}') {
+        test_pass
+} else {
+        test_fail
+}
+
+if (&Tmp-String-6 == '{"Service-Type":{"type":"uint32","value":[1]}}') {
+        test_pass
+} else {
+        test_fail
+}
+
+
+update request {
+	&Tmp-String-1 !* ANY
+	&Tmp-String-2 !* ANY
+	&Tmp-String-3 !* ANY
+	&Tmp-String-4 !* ANY
+	&Tmp-String-5 !* ANY
+	&Tmp-String-6 !* ANY
+	&Tmp-Integer-1 !* ANY
+	&Service-Type !* ANY
+}
+
+
+# 3. Object format output tests
+
+# These are unsorted dictionaries. Hopefully json-c doesn't suddenly
+# decide that it's going to use a different ordering of the keys...
+
+update request {
+	&Tmp-String-1 := "%{json_o_sn_tn_an_encode:&request:[*]}"
+	&Tmp-String-2 := "%{json_o_sn_tn_ay_encode:&request:[*]}"
+	&Tmp-String-3 := "%{json_o_sn_ty_an_encode:&request:[*]}"
+	&Tmp-String-4 := "%{json_o_sn_ty_ay_encode:&request:[*]}"
+	&Tmp-String-5 := "%{json_o_sy_tn_an_encode:&request:[*]}"
+	&Tmp-String-6 := "%{json_o_sy_tn_ay_encode:&request:[*]}"
+	&Tmp-String-7 := "%{json_o_sy_ty_an_encode:&request:[*]}"
+	&Tmp-String-8 := "%{json_o_sy_ty_ay_encode:&request:[*]}"
+}
+
+
+if (&Tmp-String-1 == '{"User-Name":{"value":["john"]},"User-Password":{"value":["testing123"]}}') {
+        test_pass
+} else {
+        test_fail
+}
+
+if (&Tmp-String-2 == '{"User-Name":{"value":["john"]},"User-Password":{"value":["testing123"]}}') {
+        test_pass
+} else {
+        test_fail
+}
+
+if (&Tmp-String-3 == '{"User-Name":{"type":"string","value":["john"]},"User-Password":{"type":"string","value":["testing123"]}}') {
+        test_pass
+} else {
+        test_fail
+}
+
+if (&Tmp-String-4 == '{"User-Name":{"type":"string","value":["john"]},"User-Password":{"type":"string","value":["testing123"]}}') {
+        test_pass
+} else {
+        test_fail
+}
+
+if (&Tmp-String-5 == '{"User-Name":"john","User-Password":"testing123"}') {
+        test_pass
+} else {
+        test_fail
+}
+
+if (&Tmp-String-6 == '{"User-Name":["john"],"User-Password":["testing123"]}') {
+        test_pass
+} else {
+        test_fail
+}
+
+if (&Tmp-String-7 == '{"User-Name":"john","User-Password":"testing123"}') {
+        test_pass
+} else {
+        test_fail
+}
+
+if (&Tmp-String-8 == '{"User-Name":["john"],"User-Password":["testing123"]}') {
+        test_pass
+} else {
+        test_fail
+}
+
+
+update request {
+	&Tmp-String-1 !* ANY
+	&Tmp-String-2 !* ANY
+	&Tmp-String-3 !* ANY
+	&Tmp-String-4 !* ANY
+	&Tmp-String-5 !* ANY
+	&Tmp-String-6 !* ANY
+	&Tmp-String-7 !* ANY
+	&Tmp-String-8 !* ANY
+}
+
+
+# 4. Array format output tests
+
+update request {
+	&Tmp-String-1 := "%{json_a_sn_tn_an_encode:&request:[*]}"
+	&Tmp-String-2 := "%{json_a_sn_tn_ay_encode:&request:[*]}"
+	&Tmp-String-3 := "%{json_a_sn_ty_an_encode:&request:[*]}"
+	&Tmp-String-4 := "%{json_a_sn_ty_ay_encode:&request:[*]}"
+	&Tmp-String-5 := "%{json_a_sy_tn_an_encode:&request:[*]}"
+	&Tmp-String-6 := "%{json_a_sy_tn_ay_encode:&request:[*]}"
+	&Tmp-String-7 := "%{json_a_sy_ty_an_encode:&request:[*]}"
+	&Tmp-String-8 := "%{json_a_sy_ty_ay_encode:&request:[*]}"
+}
+
+
+if (&Tmp-String-1 == '[{"name":"User-Name","value":"john"},{"name":"User-Password","value":"testing123"}]') {
+        test_pass
+} else {
+        test_fail
+}
+
+if (&Tmp-String-2 == '[{"name":"User-Name","value":["john"]},{"name":"User-Password","value":["testing123"]}]') {
+        test_pass
+} else {
+        test_fail
+}
+
+if (&Tmp-String-3 == '[{"name":"User-Name","type":"string","value":"john"},{"name":"User-Password","type":"string","value":"testing123"}]') {
+        test_pass
+} else {
+        test_fail
+}
+
+if (&Tmp-String-4 == '[{"name":"User-Name","type":"string","value":["john"]},{"name":"User-Password","type":"string","value":["testing123"]}]') {
+        test_pass
+} else {
+        test_fail
+}
+
+if (&Tmp-String-5 == '["john","testing123"]') {
+        test_pass
+} else {
+        test_fail
+}
+
+if (&Tmp-String-6 == '["john","testing123"]') {
+        test_pass
+} else {
+        test_fail
+}
+
+if (&Tmp-String-7 == '["john","testing123"]') {
+        test_pass
+} else {
+        test_fail
+}
+
+if (&Tmp-String-8 == '["john","testing123"]') {
+        test_pass
+} else {
+        test_fail
+}
+
+
+update request {
+	&Tmp-String-1 !* ANY
+	&Tmp-String-2 !* ANY
+	&Tmp-String-3 !* ANY
+	&Tmp-String-4 !* ANY
+	&Tmp-String-5 !* ANY
+	&Tmp-String-6 !* ANY
+	&Tmp-String-7 !* ANY
+	&Tmp-String-8 !* ANY
+}
+
+
+# Convert `make json.test` unlang update output to tests, for when
+# things need updating.
+#  
+#  cat \
+#    | cut -c44- \
+#    | sed -e 's/\\"/"/g' \
+#          -e 's/\s*$//' \
+#          -e "s/:= \"/== '/" \
+#          -e 's/^/if (/' \
+#          -e "s/\"$/') {/" \
+#          -e "s/$/\n	test_pass\n} else {\n	test_fail\n}\n/"
