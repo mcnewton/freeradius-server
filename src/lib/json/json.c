@@ -364,14 +364,21 @@ void fr_json_version_print(void)
  * @param[in] prefix	The prefix to use, can be NULL to skip the prefix.
  * @return JSON string representation of the value pairs
  */
-char *fr_json_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps, const char *prefix)
+static fr_json_format_t const default_json_format = {
+	.include_type = true
+};
+
+char *fr_json_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps, char const *prefix,
+			      fr_json_format_t const *format)
 {
 	fr_cursor_t		cursor;
 	VALUE_PAIR 		*vp;
 	struct json_object	*obj;
-	const char		*p;
+	char const		*p;
 	char			*out;
 	char			buf[FR_DICT_ATTR_MAX_NAME_LEN + 32];
+
+	if (!format) format = &default_json_format;
 
 	MEM(obj = json_object_new_object());
 
