@@ -32,15 +32,14 @@ static int		json_afrom_value_box(TALLOC_CTX *ctx, json_object **out,
 					     VALUE_PAIR *vp, fr_json_format_t const *format);
 
 static json_object	*json_dict_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps,
-						   const char *prefix,
 						   fr_json_format_t const *format);
 
 static json_object	*json_array_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps,
-						    const char *prefix,
 						    fr_json_format_t const *format);
 
 static fr_json_format_t const default_json_format = {
-	.include_type = true
+	.include_type = true,
+	.prefix = NULL
 };
 
 
@@ -423,12 +422,10 @@ static int json_afrom_value_box(TALLOC_CTX *ctx, json_object **out,
  *
  * @param[in] ctx	Talloc context.
  * @param[in] vps	a list of value pairs.
- * @param[in] prefix	The prefix to use, can be NULL to skip the prefix.
  * @param[in] format	Formatting control, must be set.
  * @return JSON object with the generated representation.
  */
 static json_object *json_dict_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps,
-					      char const *prefix,
 					      fr_json_format_t const *format)
 {
 	fr_cursor_t		cursor;
@@ -455,8 +452,8 @@ static json_object *json_dict_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps,
 		 *	attribute name.
 		 */
 		name_with_prefix = vp->da->name;
-		if (prefix) {
-			int len = snprintf(buf, sizeof(buf), "%s:%s", prefix, vp->da->name);
+		if (format->prefix) {
+			int len = snprintf(buf, sizeof(buf), "%s:%s", format->prefix, vp->da->name);
 			if (len == (int)strlen(buf)) {
 				name_with_prefix = buf;
 			}
@@ -583,12 +580,10 @@ static json_object *json_dict_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps,
  *
  * @param[in] ctx	Talloc context.
  * @param[in] vps	a list of value pairs.
- * @param[in] prefix	The prefix to use, can be NULL to skip the prefix.
  * @param[in] format	Formatting control, must be set.
  * @return JSON object with the generated representation.
  */
 static struct json_object *json_array_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps,
-						      const char *prefix,
 						      fr_json_format_t const *format)
 {
 	fr_cursor_t		cursor;
@@ -640,8 +635,8 @@ static struct json_object *json_array_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAI
 		 *	attribute name.
 		 */
 		name_with_prefix = vp->da->name;
-		if (prefix) {
-			int len = snprintf(buf, sizeof(buf), "%s:%s", prefix, vp->da->name);
+		if (format->prefix) {
+			int len = snprintf(buf, sizeof(buf), "%s:%s", format->prefix, vp->da->name);
 			if (len == (int)strlen(buf)) {
 				name_with_prefix = buf;
 			}
@@ -744,11 +739,10 @@ static struct json_object *json_array_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAI
  *
  * @param[in] ctx	Talloc context.
  * @param[in] vps	a list of value pairs.
- * @param[in] prefix	The prefix to use, can be NULL to skip the prefix.
  * @param[in] format	Formatting control, can be NULL to use default format.
  * @return JSON string representation of the value pairs
  */
-char *fr_json_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps, const char *prefix,
+char *fr_json_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps,
 			      fr_json_format_t const *format)
 {
 	struct json_object	*obj;
@@ -762,9 +756,9 @@ char *fr_json_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps, const char *pre
 	 *	array, otherwise it's an object.
 	 */
 	if (format->format_array) {
-		MEM(obj = json_array_afrom_pair_list(ctx, vps, prefix, format));
+		MEM(obj = json_array_afrom_pair_list(ctx, vps, format));
 	} else {
-		MEM(obj = json_dict_afrom_pair_list(ctx, vps, prefix, format));
+		MEM(obj = json_dict_afrom_pair_list(ctx, vps, format));
 	}
 
 	MEM(p = json_object_to_json_string_ext(obj, JSON_C_TO_STRING_PLAIN));
