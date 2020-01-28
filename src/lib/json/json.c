@@ -28,6 +28,23 @@
 #include <freeradius-devel/server/rad_assert.h>
 #include "base.h"
 
+static int		_fr_enum_or_value_to_json(TALLOC_CTX *ctx, VALUE_PAIR *vp,
+						  json_object **out,
+						  fr_json_format_t const *format);
+
+static json_object	*_fr_json_dict_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps,
+						       const char *prefix,
+						       fr_json_format_t const *format);
+
+static json_object	*_fr_json_array_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps,
+							const char *prefix,
+							fr_json_format_t const *format);
+
+static fr_json_format_t const default_json_format = {
+	.include_type = true
+};
+
+
 /** Convert json object to fr_value_box_t
  *
  * @param[in] ctx	to allocate any value buffers in (should usually be the same as out).
@@ -341,52 +358,71 @@ void fr_json_version_print(void)
 #endif
 }
 
-/** Returns a JSON string of a list of value pairs
+
+/** Get json object of a VP as defined by format.
  *
- *  The result is a talloc-ed string, freeing the string is the responsibility
- *  of the caller.
+ * If format.enum_value is set, and the given VP has one, the enum
+ * value is returned as a json_object. Otherwise the VP data is
+ * returned as-is.
  *
- * Output format is:
-@verbatim
+ * @param[in] ctx	Talloc context.
+ * @param[in] vp	to get the value of.
+ * @param[out] out	returned json object.
+ * @param[in] format	format definition.
+ * @return 1 if 'out' is the enum value, 0 otherwise.
+ */
+static int _fr_enum_or_value_to_json(TALLOC_CTX *ctx, VALUE_PAIR *vp,
+				     json_object **out,
+				     fr_json_format_t const *format)
 {
-	"<attribute0>":{
-		"type":"<type0>",
-		"value":[<value0>,<value1>,<valueN>],
-		"mapping":[<enumv0>,<enumv1>,<enumvN>]
-	},
-	"<attribute1>":{
-		"type":"<type1>",
-		"value":[...]
-	},
-	"<attributeN>":{
-		"type":"<typeN>",
-		"value":[...]
-	},
+	struct json_object	*obj;
+	fr_value_box_t const	*vb;
+	int			is_enum = 0;
+
+	rad_assert(format);
+	rad_assert(vp);
+
+	vb = &vp->data;
+
+	if (format->enum_value) {
+		is_enum = fr_pair_value_value_box(vp, &vb, 1);
+		rad_assert(is_enum >= 0);
+	}
+
+	MEM(obj = json_object_from_value_box(ctx, vb, format->always_string));
+
+	*out = obj;
+	return is_enum;
 }
-@endverbatim
+
+
+/** Returns a JSON object of a list of value pairs
  *
- * @note Mapping element is only present for attributes with enumerated values.
+ * The result is a struct json_object, which should be free'd with
+ * json_object_put() by the caller. Intended to only be called by
+ * fr_json_afrom_pair_list().
+ *
+ * Default output is as per fr_json_afrom_pair_list().
  *
  * @param[in] ctx	Talloc context.
  * @param[in] vps	a list of value pairs.
  * @param[in] prefix	The prefix to use, can be NULL to skip the prefix.
- * @return JSON string representation of the value pairs
+ * @param[in] format	Formatting control, must be set.
+ * @return JSON object with the generated representation.
  */
-static fr_json_format_t const default_json_format = {
-	.include_type = true
-};
-
-char *fr_json_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps, const char *prefix,
-			      fr_json_format_t const *format)
+static json_object *_fr_json_dict_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps,
+							const char *prefix,
+							fr_json_format_t const *format)
 {
 	fr_cursor_t		cursor;
-	VALUE_PAIR 		*vp;
+	VALUE_PAIR		*vp;
 	struct json_object	*obj;
-	const char		*p;
-	char			*out;
 	char			buf[FR_DICT_ATTR_MAX_NAME_LEN + 32];
+	json_type		type;
 
-	if (!format) format = &default_json_format;
+	/* We must be generating an object */
+	rad_assert(format);
+	rad_assert(!format->format_array);
 
 	MEM(obj = json_object_new_object());
 
@@ -394,9 +430,13 @@ char *fr_json_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps, const char *pre
 	     vp;
 	     vp = fr_cursor_next(&cursor)) {
 		char const		*name_with_prefix;
-		fr_dict_enum_t const	*dv;
 		struct json_object	*vp_object, *values, *value, *type_name;
+		bool			add_single = false;
 
+		/*
+		 *	If prefix is set, append this to the
+		 *	attribute name.
+		 */
 		name_with_prefix = vp->da->name;
 		if (prefix) {
 			int len = snprintf(buf, sizeof(buf), "%s:%s", prefix, vp->da->name);
@@ -410,61 +450,306 @@ char *fr_json_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps, const char *pre
 		 *	if we don't, create a new one...
 		 */
 		if (!json_object_object_get_ex(obj, name_with_prefix, &vp_object)) {
-			MEM(vp_object = json_object_new_object());
-			json_object_object_add(obj, name_with_prefix, vp_object);
+			if (format->simple) {
+				if (format->value_as_list) {
+					/*
+					 *	We have been asked to ensure /all/ values are lists,
+					 *	even if there's only one attribute.
+					 */
+					MEM(values = json_object_new_array());
+					json_object_object_add(obj, name_with_prefix, values);
+				} else {
+					/*
+					 *	Deal with it later on.
+					 */
+					add_single = true;
+				}
+			} else {
+				/*
+				 *	Standard format has more structure.
+				 */
+				MEM(vp_object = json_object_new_object());
+				json_object_object_add(obj, name_with_prefix, vp_object);
+				/*
+				 *	Add "type" to newly created keys.
+				 */
+				if (format->include_type) {
+					MEM(type_name = json_object_new_string(fr_table_str_by_value(fr_value_box_type_table, vp->vp_type, "<INVALID>")));
+					json_object_object_add(vp_object, "type", type_name);
+				}
 
-			MEM(type_name = json_object_new_string(fr_table_str_by_value(fr_value_box_type_table, vp->vp_type, "<INVALID>")));
-			json_object_object_add(vp_object, "type", type_name);
-
-			MEM(values = json_object_new_array());
-			json_object_object_add(vp_object, "value", values);
+				/*
+				 *	Create a "value" array to hold any attribute values for this attribute
+				 */
+				MEM(values = json_object_new_array());
+				json_object_object_add(vp_object, "value", values);
+			}
 		/*
 		 *	If we do, get its value array...
 		 */
-		} else if (!fr_cond_assert(json_object_object_get_ex(vp_object, "value", &values))) {
-			fr_strerror_printf("Inconsistent JSON tree");
-			json_object_put(obj);
+		} else {
+			if (format->simple) {
+				type = json_object_get_type(vp_object);
 
-			return NULL;
-		}
-
-		MEM(value = json_object_from_value_box(ctx, &vp->data, false));
-		json_object_array_add(values, value);
-
-		/*
-		 *	Add a mapping array
-		 */
-		if (vp->da->flags.has_value) {
-			struct json_object *mapping;
-
-			if (!json_object_object_get_ex(vp_object, "mapping", &mapping)) {
-				MEM(mapping = json_object_new_array());
-				json_object_object_add(vp_object, "mapping", mapping);
-			}
-
-			dv = fr_dict_enum_by_value(vp->da, &vp->data);
-			if (dv) {
-				struct json_object *mapped_value;
-
-				/* Add to mapping array */
-				MEM(mapped_value = json_object_from_value_box(ctx, dv->value, false));
-				json_object_array_add(mapping, mapped_value);
-			/*
-			 *	Add NULL value to mapping array
-			 */
+				if (type == json_type_array) {
+					values = vp_object;
+				} else {
+					/*
+					 *	OK, we've seen one of these before, but didn't add
+					 *	it as an array the first time. Sort that out.
+					 */
+					MEM(values = json_object_new_array());
+					json_object_array_add(values, json_object_get(vp_object));
+					json_object_object_del(obj, name_with_prefix);
+					json_object_object_add(obj, name_with_prefix, values);
+				}
 			} else {
-				if (json_object_object_get_ex(vp_object, "mapping", &mapping)) {
-					json_object_array_add(mapping, NULL);
+				if (!fr_cond_assert(json_object_object_get_ex(vp_object, "value", &values))) {
+					fr_strerror_printf("Inconsistent JSON tree");
+					json_object_put(obj);
+
+					return NULL;
 				}
 			}
 		}
+
+		/*
+		 *	Get the actual value from the attribute and add it to
+		 *	the JSON object.
+		 */
+		_fr_enum_or_value_to_json(ctx, vp, &value, format);
+
+		if (add_single) {
+			/*
+			 *	Only ever used the first time adding a new
+			 *	attribute when in "simple" mode and not
+			 *	"value_as_list".
+			 */
+			json_object_object_add(obj, name_with_prefix, value);
+		} else {
+			/*
+			 *	Otherwise we're always appending to a JSON array.
+			 */
+			json_object_array_add(values, value);
+		}
+	}
+
+	return obj;
+}
+
+
+/** Returns a JSON array of a list of value pairs
+ *
+ * The result is a struct json_object, which should be free'd with
+ * json_object_put() by the caller. Intended to only be called by
+ * fr_json_afrom_pair_list().
+ *
+ * Default output is as below, however the 'format' struct can be
+ * used to control this.
+@verbatim
+[
+	{
+		"name":"<attribute0>",
+		"value":"<value0>"
+	},
+	{
+		"name":"<attribute1>",
+		"value":"<value1>"
+	},
+	{	"name":"<attribute2>",
+		"value":"<value2>"
+	}
+]
+@endverbatim
+ *
+ * @param[in] ctx	Talloc context.
+ * @param[in] vps	a list of value pairs.
+ * @param[in] prefix	The prefix to use, can be NULL to skip the prefix.
+ * @param[in] format	Formatting control, must be set.
+ * @return JSON object with the generated representation.
+ */
+static struct json_object *_fr_json_array_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps,
+							  const char *prefix,
+							  fr_json_format_t const *format)
+{
+	fr_cursor_t		cursor;
+	VALUE_PAIR		*vp;
+	struct json_object	*obj;
+	struct json_object	*seen_attributes;
+	char			buf[FR_DICT_ATTR_MAX_NAME_LEN + 32];
+
+	/* We must be generating an array */
+	rad_assert(format);
+	rad_assert(format->format_array);
+
+	MEM(obj = json_object_new_array());
+
+	/*
+	 *	If attribute values should be in a list format, then keep track of the attributes we've seen in a JSON object.
+	 */
+	if (format->value_as_list) {
+		seen_attributes = json_object_new_object();
+	}
+
+	for (vp = fr_cursor_init(&cursor, vps);
+	     vp;
+	     vp = fr_cursor_next(&cursor)) {
+		char const		*name_with_prefix;
+		struct json_object	*values, *name, *value, *type_name;
+		struct json_object	*attrobj = NULL;
+		bool			already_seen = false;
+
+		if (format->simple) {
+			/*
+			 *	Simple format for arrays is very simple - just add all the
+			 *	attribute values to the array in order.
+			 */
+			_fr_enum_or_value_to_json(ctx, vp, &value, format);
+			json_object_array_add(obj, value);
+
+			continue;
+		}
+		/*
+		 *	All other array types involve adding object to the array, one
+		 *	for each attribute.
+		 */
+
+		/*
+		 *	If prefix is set, append this to the
+		 *	attribute name.
+		 */
+		name_with_prefix = vp->da->name;
+		if (prefix) {
+			int len = snprintf(buf, sizeof(buf), "%s:%s", prefix, vp->da->name);
+			if (len == (int)strlen(buf)) {
+				name_with_prefix = buf;
+			}
+		}
+
+		/*
+		 *	Get value of this attribute to add.
+		 */
+		_fr_enum_or_value_to_json(ctx, vp, &value, format);
+
+		if (format->value_as_list) {
+			/*
+			 *	Try and find this attribute in the "seen_attributes" object. If it's
+			 *	there then get the "values" array to add this attribute value to.
+			 */
+			already_seen = json_object_object_get_ex(seen_attributes, name_with_prefix, &values);
+		}
+
+		/*
+		 *	If we're adding all attributes to the toplevel array, or we're adding values
+		 *	to an array of an existing attribute but haven't seen it before, then we need
+		 *	to create a new JSON object for this attribute.
+		 */
+		if (!format->value_as_list || !already_seen) {
+			/* Create object and add it to top-level array */
+			MEM(attrobj = json_object_new_object());
+			json_object_array_add(obj, attrobj);
+
+			/* Add "name": key */
+			MEM(name = json_object_new_string(name_with_prefix));
+			json_object_object_add(attrobj, "name", name);
+
+			/* Add "type": key, if required */
+			if (format->include_type) {
+				MEM(type_name = json_object_new_string(fr_table_str_by_value(fr_value_box_type_table, vp->vp_type, "<INVALID>")));
+				json_object_object_add(attrobj, "type", type_name);
+			}
+		}
+
+		if (format->value_as_list) {
+			/*
+			 *	We're adding values to an array for the first copy of this attribute
+			 *	that we saw. First time around we need to create an array...
+			 */
+			if (!already_seen) {
+				MEM(values = json_object_new_array());
+				/* Add "value":[] key to the attribute object */
+				json_object_object_add(attrobj, "value", values);
+
+				/* Also add to "seen_attributes" to check later */
+				json_object_object_add(seen_attributes, name_with_prefix, json_object_get(values));
+			}
+
+			/*
+			 *	Always add the value to the respective "values" array.
+			 */
+			json_object_array_add(values, value);
+		} else {
+			/* This is simpler; just add a "value": key to the attribute object. */
+
+			json_object_object_add(attrobj, "value", value);
+		}
+
+	}
+
+	/*
+	 *	No longer need the "seen_attributes" object, it was just used for tracking.
+	 */
+	json_object_put(seen_attributes);
+
+	return obj;
+}
+
+
+/** Returns a JSON string of a list of value pairs
+ *
+ * The result is a talloc-ed string, freeing the string is the responsibility
+ * of the caller.
+ *
+ * Default output format is:
+@verbatim
+{
+	"<attribute0>":{
+		"type":"<type0>",
+		"value":[<value0>,<value1>,<valueN>]
+	},
+	"<attribute1>":{
+		"type":"<type1>",
+		"value":[...]
+	},
+	"<attributeN>":{
+		"type":"<typeN>",
+		"value":[...]
+	},
+}
+@endverbatim
+ * The 'format' struct contains settings to configure the output
+ * format. See the rlm_json documentation for detailed
+ * explanation.
+ *
+ * @param[in] ctx	Talloc context.
+ * @param[in] vps	a list of value pairs.
+ * @param[in] prefix	The prefix to use, can be NULL to skip the prefix.
+ * @param[in] format	Formatting control, can be NULL to use default format.
+ * @return JSON string representation of the value pairs
+ */
+char *fr_json_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps, const char *prefix,
+			      fr_json_format_t const *format)
+{
+	struct json_object	*obj;
+	const char		*p;
+	char			*out;
+
+	if (!format) format = &default_json_format;
+
+	/*
+	 *	If format_array is set then the top level is an
+	 *	array, otherwise it's an object.
+	 */
+	if (format->format_array) {
+		MEM(obj = _fr_json_array_afrom_pair_list(ctx, vps, prefix, format));
+	} else {
+		MEM(obj = _fr_json_dict_afrom_pair_list(ctx, vps, prefix, format));
 	}
 
 	MEM(p = json_object_to_json_string_ext(obj, JSON_C_TO_STRING_PLAIN));
 	MEM(out = talloc_strdup(ctx, p));
 
-	json_object_put(obj);	/* Should also free string buff from above */
+	json_object_put(obj);	/* Free the JSON structure, it's not needed any more */
 
 	return out;
 }
-
