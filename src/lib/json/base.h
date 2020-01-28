@@ -42,6 +42,23 @@ RCSIDH(json_h, "$Id$")
 
 #  include <freeradius-devel/server/base.h>
 
+struct fr_json_format_s {
+	bool	format_array;	//!< Output is object unless true.
+
+	bool	simple;		//!< Use simplified format.
+
+	bool	include_type;	//!< Include attribute type if possible.
+
+	bool	value_as_list;	//!< Use list for multiple attribute values.
+
+	bool	always_string;	//!< Output all data types as strings.
+
+	bool	enum_value;	//!< Output enums as value, not string representation.
+};
+
+typedef struct fr_json_format_s fr_json_format_t;
+
+
 /* jpath .c */
 typedef struct fr_jpath_node fr_jpath_node_t;
 
@@ -68,5 +85,6 @@ size_t    	fr_json_from_pair(char *out, size_t outlen, VALUE_PAIR const *vp);
 
 void		fr_json_version_print(void);
 
-char		*fr_json_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps, const char *prefix);
+char		*fr_json_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps, const char *prefix,
+					 fr_json_format_t const *format);
 #endif
