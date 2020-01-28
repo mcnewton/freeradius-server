@@ -54,6 +54,8 @@ struct fr_json_format_s {
 	bool	always_string;	//!< Output all data types as strings.
 
 	bool	enum_value;	//!< Output enums as value, not string representation.
+
+	const char *prefix;	//!< Prefix to add to all attribute names
 };
 
 typedef struct fr_json_format_s fr_json_format_t;
@@ -87,6 +89,6 @@ size_t    	fr_json_from_pair(char *out, size_t outlen, VALUE_PAIR const *vp);
 
 void		fr_json_version_print(void);
 
-char		*fr_json_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps, const char *prefix,
+char		*fr_json_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps,
 					 fr_json_format_t const *format);
 #endif
