@@ -397,7 +397,7 @@ static int _fr_enum_or_value_to_json(TALLOC_CTX *ctx, VALUE_PAIR *vp,
 	vb = &vp->data;
 
 	if (format->enum_value) {
-		is_enum = fr_pair_value_value_box(vp, &vb, 1);
+		is_enum = fr_pair_value_enum_box(&vb, vp);
 		rad_assert(is_enum >= 0);
 	}
 

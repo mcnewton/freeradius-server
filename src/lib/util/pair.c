@@ -2662,18 +2662,17 @@ char const *fr_pair_value_enum(VALUE_PAIR const *vp, char buff[20])
  * enum value, this will be returned instead. Otherwise it will be set to the
  * value box of the VP itself.
  *
- * @param[in] vp	to print.
  * @param[out] out	pointer to a value box.
- * @param[in] e		if 1, return enum value if possible
+ * @param[in] vp	to print.
  * @return 1 if the enum value has been used, 0 otherwise, -1 on error.
  */
-int fr_pair_value_value_box(VALUE_PAIR *vp, fr_value_box_t const **out, int e)
+int fr_pair_value_enum_box(fr_value_box_t const **out, VALUE_PAIR *vp)
 {
 	fr_dict_enum_t const	*dv;
 
 	if (!out || !vp ) return -1;
 
-	if (e && vp->da && vp->da->flags.has_value &&
+	if (vp->da && vp->da->flags.has_value &&
 	    (dv = fr_dict_enum_by_value(vp->da, &vp->data))) {
 		*out = dv->value;
 		return 1;
