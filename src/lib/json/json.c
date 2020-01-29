@@ -28,9 +28,8 @@
 #include <freeradius-devel/server/rad_assert.h>
 #include "base.h"
 
-static int		enum_or_value_to_json(TALLOC_CTX *ctx, VALUE_PAIR *vp,
-					      json_object **out,
-					      fr_json_format_t const *format);
+static int		json_afrom_value_box(TALLOC_CTX *ctx, json_object **out,
+					     VALUE_PAIR *vp, fr_json_format_t const *format);
 
 static json_object	*json_dict_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps,
 						   fr_json_format_t const *format);
@@ -371,14 +370,13 @@ void fr_json_version_print(void)
  * returned as-is.
  *
  * @param[in] ctx	Talloc context.
- * @param[in] vp	to get the value of.
  * @param[out] out	returned json object.
+ * @param[in] vp	to get the value of.
  * @param[in] format	format definition.
  * @return 1 if 'out' is the enum value, 0 otherwise. -1 on error.
  */
-static int enum_or_value_to_json(TALLOC_CTX *ctx, VALUE_PAIR *vp,
-				 json_object **out,
-				 fr_json_format_t const *format)
+static int json_afrom_value_box(TALLOC_CTX *ctx, json_object **out,
+				VALUE_PAIR *vp, fr_json_format_t const *format)
 {
 	struct json_object	*obj;
 	fr_value_box_t const	*vb;
@@ -533,7 +531,7 @@ static json_object *json_dict_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps,
 		 *	Get the actual value from the attribute and add it to
 		 *	the JSON object.
 		 */
-		if (enum_or_value_to_json(ctx, vp, &value, format) < 0) {
+		if (json_afrom_value_box(ctx, &value, vp, format) < 0) {
 			return NULL;
 		}
 
@@ -620,7 +618,7 @@ static struct json_object *json_array_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAI
 			 *	Simple format for arrays is very simple - just add all the
 			 *	attribute values to the array in order.
 			 */
-			if (enum_or_value_to_json(ctx, vp, &value, format) < 0) {
+			if (json_afrom_value_box(ctx, &value, vp, format) < 0) {
 				return NULL;
 			}
 			json_object_array_add(obj, value);
@@ -647,7 +645,7 @@ static struct json_object *json_array_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAI
 		/*
 		 *	Get value of this attribute to add.
 		 */
-		enum_or_value_to_json(ctx, vp, &value, format);
+		json_afrom_value_box(ctx, &value, vp, format);
 
 		if (format->value_as_list) {
 			/*
