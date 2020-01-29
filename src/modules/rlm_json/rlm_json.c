@@ -100,36 +100,82 @@ static xlat_action_t json_quote_xlat(TALLOC_CTX *ctx, fr_cursor_t *out, REQUEST 
 
 /** Determine if a jpath expression is valid
  *
- * @param ctx to allocate expansion buffer in.
- * @param mod_inst data.
- * @param xlat_inst data.
- * @param out Where to write the output (in the format @verbatim<bytes parsed>[:error]@endverbatim).
- * @param outlen How big out is.
+ * @param ctx talloc context
+ * @param out Where to write the output
  * @param request The current request.
- * @param fmt jpath expression to parse.
- * @return number of bytes written to out.
+ * @param xlat_inst unused
+ * @param xlat_thread_inst unused
+ * @param in list of value boxes as input
+ * @return XLAT_ACTION_DONE or XLAT_ACTION_FAIL
  */
-static ssize_t jpath_validate_xlat(UNUSED TALLOC_CTX *ctx, char **out, size_t outlen,
-			    	   UNUSED void const *mod_inst, UNUSED void const *xlat_inst,
-				   REQUEST *request, char const *fmt)
+static xlat_action_t jpath_validate_xlat(TALLOC_CTX *ctx, fr_cursor_t *out, REQUEST *request,
+					 UNUSED void const *xlat_inst, UNUSED void *xlat_thread_inst,
+					 fr_value_box_t **in)
 {
+	fr_value_box_t *vb;
 	fr_jpath_node_t *head;
-	ssize_t slen, ret;
-	char *jpath_str;
+	ssize_t slen;
+	char *jpath_str = NULL;
+	char *out_str = NULL;
 
-	slen = fr_jpath_parse(request, &head, fmt, strlen(fmt));
-	if (slen <= 0) {
-		rad_assert(head == NULL);
-		return snprintf(*out, outlen, "%zd:%s", -(slen), fr_strerror());
+	if (!in) {
+		REDEBUG("Nothing to validate");
+		return XLAT_ACTION_FAIL;
 	}
-	rad_assert(talloc_get_type_abort(head, fr_jpath_node_t));
 
-	jpath_str = fr_jpath_asprint(request, head);
-	ret = snprintf(*out, outlen, "%zu:%s", (size_t) slen, jpath_str);
+	if (fr_value_box_list_concat(ctx, *in, in, FR_TYPE_STRING, true) < 0) {
+		RPEDEBUG("Failed concatenating input");
+		return XLAT_ACTION_FAIL;
+	}
+
+	slen = fr_jpath_parse(ctx, &head, (*in)->vb_strvalue, (*in)->vb_length);
+
+	MEM(vb = fr_value_box_alloc_null(ctx));
+
+	if (slen <= 0) {
+		/*
+		 *	Failure to parse the jpath. Return the error.
+		 */
+		rad_assert(head == NULL);
+		out_str = talloc_asprintf(vb, "%zu:%s", (size_t) -slen, fr_strerror());
+		if (!out_str) {
+			REDEBUG("Failed to generate error string");
+		error:
+			talloc_free(vb);
+			TALLOC_FREE(jpath_str);
+			TALLOC_FREE(out_str);
+			return XLAT_ACTION_FAIL;
+		}
+	} else {
+		/*
+		 *	Success. Return the length and parsed string.
+		 */
+		rad_assert(talloc_get_type_abort(head, fr_jpath_node_t));
+
+		jpath_str = fr_jpath_asprint(vb, head);
+		if (!jpath_str) {
+			REDEBUG("Failed to allocate JSON string");
+			goto error;
+		}
+
+		out_str = talloc_asprintf(vb, "%zu:%s", (size_t) slen, jpath_str);
+		if (!out_str) {
+			REDEBUG("Failed to generate validation string");
+			goto error;
+		}
+	}
+
+	if (unlikely(fr_value_box_bstrsteal(vb, vb, NULL, out_str, false) < 0)) {
+		REDEBUG("Failed to allocate JSON string");
+		goto error;
+	}
+
 	talloc_free(head);
-	talloc_free(jpath_str);
+	TALLOC_FREE(jpath_str);
 
-	return ret;
+	fr_cursor_append(out, vb);
+
+	return XLAT_ACTION_DONE;
 }
 
 /** Pre-parse and validate literal jpath expressions for maps
@@ -375,7 +421,7 @@ finish:
 static int mod_bootstrap(void *instance, UNUSED CONF_SECTION *conf)
 {
 	xlat_async_register(instance, "jsonquote", json_quote_xlat);
-	xlat_register(instance, "jpathvalidate", jpath_validate_xlat, NULL, NULL, 0, XLAT_DEFAULT_BUF_LEN, true);
+	xlat_async_register(instance, "jpathvalidate", jpath_validate_xlat);
 
 	if (map_proc_register(instance, "json", mod_map_proc,
 			      mod_map_proc_instantiate, sizeof(rlm_json_jpath_cache_t)) < 0) return -1;
