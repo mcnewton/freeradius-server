@@ -42,6 +42,12 @@ RCSIDH(json_h, "$Id$")
 
 #  include <freeradius-devel/server/base.h>
 
+/** Formatting options for fr_json_afrom_pair_list()
+ *
+ * Output examples can be found in the rlm_json module
+ * documentation, see 'doc/antora/modules/raddb/pages/mods-available/json.adoc',
+ * and in the module tests, 'src/tests/modules/json/encode.*'.
+ */
 struct fr_json_format_s {
 	bool	format_array;	//!< Output is object unless true.
 
