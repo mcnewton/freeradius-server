@@ -28,15 +28,15 @@
 #include <freeradius-devel/server/rad_assert.h>
 #include "base.h"
 
-static int		_fr_enum_or_value_to_json(TALLOC_CTX *ctx, VALUE_PAIR *vp,
-						  json_object **out,
-						  fr_json_format_t const *format);
+static int		enum_or_value_to_json(TALLOC_CTX *ctx, VALUE_PAIR *vp,
+					      json_object **out,
+					      fr_json_format_t const *format);
 
-static json_object	*_fr_json_dict_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps,
-						       fr_json_format_t const *format);
+static json_object	*json_dict_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps,
+						   fr_json_format_t const *format);
 
-static json_object	*_fr_json_array_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps,
-							fr_json_format_t const *format);
+static json_object	*json_array_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps,
+						    fr_json_format_t const *format);
 
 static fr_json_format_t const default_json_format = {
 	.include_type = true,
@@ -383,9 +383,9 @@ void fr_json_version_print(void)
  * @param[in] format	format definition.
  * @return 1 if 'out' is the enum value, 0 otherwise.
  */
-static int _fr_enum_or_value_to_json(TALLOC_CTX *ctx, VALUE_PAIR *vp,
-				     json_object **out,
-				     fr_json_format_t const *format)
+static int enum_or_value_to_json(TALLOC_CTX *ctx, VALUE_PAIR *vp,
+				 json_object **out,
+				 fr_json_format_t const *format)
 {
 	struct json_object	*obj;
 	fr_value_box_t const	*vb;
@@ -421,8 +421,8 @@ static int _fr_enum_or_value_to_json(TALLOC_CTX *ctx, VALUE_PAIR *vp,
  * @param[in] format	Formatting control, must be set.
  * @return JSON object with the generated representation.
  */
-static json_object *_fr_json_dict_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps,
-							fr_json_format_t const *format)
+static json_object *json_dict_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps,
+					      fr_json_format_t const *format)
 {
 	fr_cursor_t		cursor;
 	VALUE_PAIR		*vp;
@@ -527,7 +527,7 @@ static json_object *_fr_json_dict_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **
 		 *	Get the actual value from the attribute and add it to
 		 *	the JSON object.
 		 */
-		_fr_enum_or_value_to_json(ctx, vp, &value, format);
+		enum_or_value_to_json(ctx, vp, &value, format);
 
 		if (add_single) {
 			/*
@@ -577,8 +577,8 @@ static json_object *_fr_json_dict_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **
  * @param[in] format	Formatting control, must be set.
  * @return JSON object with the generated representation.
  */
-static struct json_object *_fr_json_array_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps,
-							  fr_json_format_t const *format)
+static struct json_object *json_array_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps,
+						      fr_json_format_t const *format)
 {
 	fr_cursor_t		cursor;
 	VALUE_PAIR		*vp;
@@ -612,7 +612,7 @@ static struct json_object *_fr_json_array_afrom_pair_list(TALLOC_CTX *ctx, VALUE
 			 *	Simple format for arrays is very simple - just add all the
 			 *	attribute values to the array in order.
 			 */
-			_fr_enum_or_value_to_json(ctx, vp, &value, format);
+			enum_or_value_to_json(ctx, vp, &value, format);
 			json_object_array_add(obj, value);
 
 			continue;
@@ -637,7 +637,7 @@ static struct json_object *_fr_json_array_afrom_pair_list(TALLOC_CTX *ctx, VALUE
 		/*
 		 *	Get value of this attribute to add.
 		 */
-		_fr_enum_or_value_to_json(ctx, vp, &value, format);
+		enum_or_value_to_json(ctx, vp, &value, format);
 
 		if (format->value_as_list) {
 			/*
@@ -748,9 +748,9 @@ char *fr_json_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps,
 	 *	array, otherwise it's an object.
 	 */
 	if (format->format_array) {
-		MEM(obj = _fr_json_array_afrom_pair_list(ctx, vps, format));
+		MEM(obj = json_array_afrom_pair_list(ctx, vps, format));
 	} else {
-		MEM(obj = _fr_json_dict_afrom_pair_list(ctx, vps, format));
+		MEM(obj = json_dict_afrom_pair_list(ctx, vps, format));
 	}
 
 	MEM(p = json_object_to_json_string_ext(obj, JSON_C_TO_STRING_PLAIN));
