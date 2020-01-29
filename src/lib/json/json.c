@@ -179,8 +179,7 @@ int fr_json_object_to_value_box(TALLOC_CTX *ctx, fr_value_box_t *out, json_objec
  * @param[in] data	to convert.
  * @param[in] as_string	always create string object
  */
-json_object *json_object_from_value_box(TALLOC_CTX *ctx, fr_value_box_t const *data,
-					bool as_string)
+json_object *json_object_from_value_box(TALLOC_CTX *ctx, fr_value_box_t const *data)
 {
 	/*
 	 *	We're converting to PRESENTATION format
@@ -193,12 +192,6 @@ json_object *json_object_from_value_box(TALLOC_CTX *ctx, fr_value_box_t const *d
 		enumv = fr_dict_enum_by_value(data->enumv, data);
 		if (enumv) return json_object_new_string(enumv->name);
 	}
-
-	/*
-	 *	Ability to force all objects to be string, which
-	 *	is a user-configurable option.
-	 */
-	if (as_string) goto do_string;
 
 	switch (data->type) {
 	default:
@@ -381,7 +374,7 @@ void fr_json_version_print(void)
  * @param[in] vp	to get the value of.
  * @param[out] out	returned json object.
  * @param[in] format	format definition.
- * @return 1 if 'out' is the enum value, 0 otherwise.
+ * @return 1 if 'out' is the enum value, 0 otherwise. -1 on error.
  */
 static int enum_or_value_to_json(TALLOC_CTX *ctx, VALUE_PAIR *vp,
 				 json_object **out,
@@ -389,6 +382,7 @@ static int enum_or_value_to_json(TALLOC_CTX *ctx, VALUE_PAIR *vp,
 {
 	struct json_object	*obj;
 	fr_value_box_t const	*vb;
+	fr_value_box_t		vb_str;
 	int			is_enum = 0;
 
 	rad_assert(format);
@@ -401,7 +395,19 @@ static int enum_or_value_to_json(TALLOC_CTX *ctx, VALUE_PAIR *vp,
 		rad_assert(is_enum >= 0);
 	}
 
-	MEM(obj = json_object_from_value_box(ctx, vb, format->always_string));
+	if (format->always_string) {
+		if (fr_value_box_cast(ctx, &vb_str, FR_TYPE_STRING, NULL, vb) == 0) {
+			vb = &vb_str;
+		} else {
+			return -1;
+		}
+	}
+
+	MEM(obj = json_object_from_value_box(ctx, vb));
+
+	if (format->always_string) {
+		fr_value_box_clear(&vb_str);
+	}
 
 	*out = obj;
 	return is_enum;
@@ -527,7 +533,9 @@ static json_object *json_dict_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps,
 		 *	Get the actual value from the attribute and add it to
 		 *	the JSON object.
 		 */
-		enum_or_value_to_json(ctx, vp, &value, format);
+		if (enum_or_value_to_json(ctx, vp, &value, format) < 0) {
+			return NULL;
+		}
 
 		if (add_single) {
 			/*
@@ -612,7 +620,9 @@ static struct json_object *json_array_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAI
 			 *	Simple format for arrays is very simple - just add all the
 			 *	attribute values to the array in order.
 			 */
-			enum_or_value_to_json(ctx, vp, &value, format);
+			if (enum_or_value_to_json(ctx, vp, &value, format) < 0) {
+				return NULL;
+			}
 			json_object_array_add(obj, value);
 
 			continue;
