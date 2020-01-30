@@ -3,6 +3,8 @@
 #
 User-Name = 'john'
 User-Password = 'testing123'
+Filter-Id = "f1"
+Filter-Id += "f2"
 
 #
 #  Expected answer

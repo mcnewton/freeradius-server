@@ -13,7 +13,8 @@ update request {
 	&Tmp-String-6 := "%{json_encode:&request:[*] ! }"
 }
 
-if (&Tmp-String-1 == '{"User-Name":{"type":"string","value":["john"]},"User-Password":{"type":"string","value":["testing123"]}}') {
+
+if (&Tmp-String-1 == '{"User-Name":{"type":"string","value":["john"]},"User-Password":{"type":"string","value":["testing123"]},"Filter-Id":{"type":"string","value":["f1","f2"]}}') {
 	test_pass
 } else {
 	test_fail
@@ -25,7 +26,7 @@ if (&Tmp-String-1 != &Tmp-String-2 ||
 	test_fail
 }
 
-if (&Tmp-String-5 == '{"User-Name":{"type":"string","value":["john"]}}') {
+if (&Tmp-String-5 == '{"User-Name":{"type":"string","value":["john"]},"Filter-Id":{"type":"string","value":["f1","f2"]}}') {
 	test_pass
 } else {
 	test_fail
@@ -36,6 +37,7 @@ if (&Tmp-String-6 == '') {
 } else {
 	test_fail
 }
+
 
 update request {
 	&Tmp-String-1 !* ANY
@@ -179,52 +181,52 @@ update request {
 }
 
 
-if (&Tmp-String-1 == '{"User-Name":{"value":["john"]},"User-Password":{"value":["testing123"]}}') {
-        test_pass
+if (&Tmp-String-1 == '{"User-Name":{"value":["john"]},"User-Password":{"value":["testing123"]},"Filter-Id":{"value":["f1","f2"]}}') {
+	test_pass
 } else {
-        test_fail
+	test_fail
 }
 
-if (&Tmp-String-2 == '{"User-Name":{"value":["john"]},"User-Password":{"value":["testing123"]}}') {
-        test_pass
+if (&Tmp-String-2 == '{"User-Name":{"value":["john"]},"User-Password":{"value":["testing123"]},"Filter-Id":{"value":["f1","f2"]}}') {
+	test_pass
 } else {
-        test_fail
+	test_fail
 }
 
-if (&Tmp-String-3 == '{"User-Name":{"type":"string","value":["john"]},"User-Password":{"type":"string","value":["testing123"]}}') {
-        test_pass
+if (&Tmp-String-3 == '{"User-Name":{"type":"string","value":["john"]},"User-Password":{"type":"string","value":["testing123"]},"Filter-Id":{"type":"string","value":["f1","f2"]}}') {
+	test_pass
 } else {
-        test_fail
+	test_fail
 }
 
-if (&Tmp-String-4 == '{"User-Name":{"type":"string","value":["john"]},"User-Password":{"type":"string","value":["testing123"]}}') {
-        test_pass
+if (&Tmp-String-4 == '{"User-Name":{"type":"string","value":["john"]},"User-Password":{"type":"string","value":["testing123"]},"Filter-Id":{"type":"string","value":["f1","f2"]}}') {
+	test_pass
 } else {
-        test_fail
+	test_fail
 }
 
-if (&Tmp-String-5 == '{"User-Name":"john","User-Password":"testing123"}') {
-        test_pass
+if (&Tmp-String-5 == '{"User-Name":"john","User-Password":"testing123","Filter-Id":["f1","f2"]}') {
+	test_pass
 } else {
-        test_fail
+	test_fail
 }
 
-if (&Tmp-String-6 == '{"User-Name":["john"],"User-Password":["testing123"]}') {
-        test_pass
+if (&Tmp-String-6 == '{"User-Name":["john"],"User-Password":["testing123"],"Filter-Id":["f1","f2"]}') {
+	test_pass
 } else {
-        test_fail
+	test_fail
 }
 
-if (&Tmp-String-7 == '{"User-Name":"john","User-Password":"testing123"}') {
-        test_pass
+if (&Tmp-String-7 == '{"User-Name":"john","User-Password":"testing123","Filter-Id":["f1","f2"]}') {
+	test_pass
 } else {
-        test_fail
+	test_fail
 }
 
-if (&Tmp-String-8 == '{"User-Name":["john"],"User-Password":["testing123"]}') {
-        test_pass
+if (&Tmp-String-8 == '{"User-Name":["john"],"User-Password":["testing123"],"Filter-Id":["f1","f2"]}') {
+	test_pass
 } else {
-        test_fail
+	test_fail
 }
 
 
@@ -254,52 +256,52 @@ update request {
 }
 
 
-if (&Tmp-String-1 == '[{"name":"User-Name","value":"john"},{"name":"User-Password","value":"testing123"}]') {
-        test_pass
+if (&Tmp-String-1 == '[{"name":"User-Name","value":"john"},{"name":"User-Password","value":"testing123"},{"name":"Filter-Id","value":"f1"},{"name":"Filter-Id","value":"f2"}]') {
+	test_pass
 } else {
-        test_fail
+	test_fail
 }
 
-if (&Tmp-String-2 == '[{"name":"User-Name","value":["john"]},{"name":"User-Password","value":["testing123"]}]') {
-        test_pass
+if (&Tmp-String-2 == '[{"name":"User-Name","value":["john"]},{"name":"User-Password","value":["testing123"]},{"name":"Filter-Id","value":["f1","f2"]}]') {
+	test_pass
 } else {
-        test_fail
+	test_fail
 }
 
-if (&Tmp-String-3 == '[{"name":"User-Name","type":"string","value":"john"},{"name":"User-Password","type":"string","value":"testing123"}]') {
-        test_pass
+if (&Tmp-String-3 == '[{"name":"User-Name","type":"string","value":"john"},{"name":"User-Password","type":"string","value":"testing123"},{"name":"Filter-Id","type":"string","value":"f1"},{"name":"Filter-Id","type":"string","value":"f2"}]') {
+	test_pass
 } else {
-        test_fail
+	test_fail
 }
 
-if (&Tmp-String-4 == '[{"name":"User-Name","type":"string","value":["john"]},{"name":"User-Password","type":"string","value":["testing123"]}]') {
-        test_pass
+if (&Tmp-String-4 == '[{"name":"User-Name","type":"string","value":["john"]},{"name":"User-Password","type":"string","value":["testing123"]},{"name":"Filter-Id","type":"string","value":["f1","f2"]}]') {
+	test_pass
 } else {
-        test_fail
+	test_fail
 }
 
-if (&Tmp-String-5 == '["john","testing123"]') {
-        test_pass
+if (&Tmp-String-5 == '["john","testing123","f1","f2"]') {
+	test_pass
 } else {
-        test_fail
+	test_fail
 }
 
-if (&Tmp-String-6 == '["john","testing123"]') {
-        test_pass
+if (&Tmp-String-6 == '["john","testing123","f1","f2"]') {
+	test_pass
 } else {
-        test_fail
+	test_fail
 }
 
-if (&Tmp-String-7 == '["john","testing123"]') {
-        test_pass
+if (&Tmp-String-7 == '["john","testing123","f1","f2"]') {
+	test_pass
 } else {
-        test_fail
+	test_fail
 }
 
-if (&Tmp-String-8 == '["john","testing123"]') {
-        test_pass
+if (&Tmp-String-8 == '["john","testing123","f1","f2"]') {
+	test_pass
 } else {
-        test_fail
+	test_fail
 }
 
 
