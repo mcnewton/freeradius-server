@@ -44,22 +44,143 @@ RCSIDH(json_h, "$Id$")
 
 /** Formatting options for fr_json_afrom_pair_list()
  *
- * Output examples can be found in the rlm_json module
- * documentation, see 'doc/antora/modules/raddb/pages/mods-available/json.adoc',
- * and in the module tests, 'src/tests/modules/json/encode.*'.
+ * These options control the format of JSON document which is
+ * produced from fr_json_afrom_pair_list(). It may also be worth
+ * looking at the examples in the rlm_json module documentation,
+ * 'doc/antora/modules/raddb/pages/mods-available/json.adoc', and
+ * in the module tests, 'src/tests/modules/json/encode.*'.
+ *
+ * The options all have corresponding variables in the
+ * fr_json_format_config CONF_PARSER definition, names as noted
+ * below.
+ *
+ *
+ * **format_array** (set by `output_as_array`) controls whether a
+ * JSON object (i.e. dictionary) or an array is generated. When
+ * false, the output will be a JSON object. The keys will be the
+ * attribute names:
+@verbatim
+{"User-Name":{"value":["john"]},"User-Password":{"value":["testing123"]}}
+@endverbatim
+ * When true, the output will be a JSON array of objects, each
+ * containing the attributes in order:
+@verbatim
+[{"name":"User-Name","value":"john"},{"name":"User-Password","value":"testing123"}]
+@endverbatim
+ *
+ *
+ * **simple** determines whether a simpler object or array is
+ * generated. When false, the output is in a more structured
+ * format; see the above examples for objects and arrays.
+ *
+ * When true, the output is simplified, e.g.
+@verbatim
+{"User-Name":"john","User-Password":"testing123"}
+@endverbatim
+ * Arrays with `simple` set will always be a list of the
+ * attribute values only:
+@verbatim
+["john","testing123"]
+@endverbatim
+ *
+ *
+ * **include_type** (set by `include_attribute_type`) will
+ * include the attribute type in the output where possible. The
+ * type is the internal attribute type (string, uint32, etc), not
+ * the output format type seen in the JSON document. The type is
+ * therefore not affected by the `always_string` or `enum_value`
+ * options.
+ *
+ * Object and array examples when false:
+@verbatim
+{"User-Name":{"value":["john"]},"User-Password":{"value":["testing123"]}}
+[{"name":"User-Name","value":"john"},{"name":"User-Password","value":"testing123"}]
+@endverbatim
+ * Object and array examples when true:
+@verbatim
+{"User-Name":{"type":"string","value":["john"]},"User-Password":{"type":"string","value":["testing123"]}}
+[{"name":"User-Name","type":"string","value":"john"},{"name":"User-Password","type":"string","value":"testing123"}]
+@endverbatim
+ *
+ *
+ * **value_as_list** (set by `attribute_values_as_array`), when
+ * true, ensures that all identical attributes are listed only
+ * once, with all values in an array. When false, those attributes
+ * should be separated out individually.
+ *
+ * This option has no effect when `format_array` is true and
+ * `simple` is also true.
+ *
+ * Example when `format_array` is false and `value_as_list` is false:
+@verbatim
+{"User-Name":"john","Filter-Id":["f1","f2"]}
+@endverbatim
+ * Example when `format_array` is false and `value_as_list` is true
+ * (note the User-Name value is now in a list, even though it is a
+ * single value; Filter-Id is always a list, as there are
+ * multiple attributes):
+@verbatim
+{"User-Name":["john"],"Filter-Id":["f1","f2"]}
+@endverbatim
+ *
+ * Example when an array is being generated (`format_array` is
+ * true) and `value_as_list` is false:
+@verbatim
+[{"name":"User-Name","value":"john"},{"name":"Filter-Id","value":"f1"},{"name":"Filter-Id","value":"f2"}]
+@endverbatim
+ * Array example when `value_as_list` is true:
+@verbatim
+[{"name":"User-Name","value":"john"},{"name":"Filter-Id","value":["f1","f2"]}]
+@endverbatim
+ *
+ *
+ * **always_string** (set by `force_always_string`) ensures that all
+ * values are written as strings in the JSON document.
+ *
+ * Example when `always_string` is false:
+@verbatim
+{"Tmp-Integer-1":{"type":"uint32","value":[999]}}
+@endverbatim
+ * Example when `always_string` is true:
+@verbatim
+{"Tmp-Integer-1":{"type":"uint32","value":["999"]}}
+@endverbatim
+ *
+ *
+ * **enum_value** (set by `use_enum_values`) determines whether
+ * enumerated values are written in their string or integer form.
+ *
+ * When false, the string form is used:
+@verbatim
+{"Service-Type":{"type":"uint32","value":["Login-User"]}}
+@endverbatim
+ * When true, the integer is used:
+@verbatim
+{"Service-Type":{"type":"uint32","value":[1]}}
+@endverbatim
+ *
+ *
+ * **prefix** adds a string prefix to all attribute names in the
+ * JSON document, with a colon delimiter.
+ *
+ * Example, when prefix is set to `foo`:
+@verbatim
+{"foo:User-Name":{"type":"string","value":["john"]}}
+@endverbatim
+ *
  */
 struct fr_json_format_s {
-	bool	format_array;	//!< Output is object unless true.
+	bool	format_array;	//!< When true, output is an array. Otherwise an object.
 
-	bool	simple;		//!< Use simplified format.
+	bool	simple;		//!< Use a simplified output format.
 
-	bool	include_type;	//!< Include attribute type if possible.
+	bool	include_type;	//!< Include attribute type where possible.
 
-	bool	value_as_list;	//!< Use list for multiple attribute values.
+	bool	value_as_list;	//!< Use JSON array for multiple attribute values.
 
 	bool	always_string;	//!< Output all data types as strings.
 
-	bool	enum_value;	//!< Output enums as value, not string representation.
+	bool	enum_value;	//!< Output enums as value, not their string representation.
 
 	const char *prefix;	//!< Prefix to add to all attribute names
 };
