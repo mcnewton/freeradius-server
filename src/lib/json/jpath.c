@@ -423,22 +423,28 @@ char *fr_jpath_asprint(TALLOC_CTX *ctx, fr_jpath_node_t const *head)
 
 	for (node = head; node; node = node->next) switch (node->selector->type) {
 	case JPATH_SELECTOR_ROOT:
+printf("JPATH_SELECTOR_ROOT '$'\n");
 		p = talloc_strdup_append_buffer(p, "$");
 		break;
 
 	case JPATH_SELECTOR_CURRENT:
+printf("JPATH_SELECTOR_CURRENT '@'\n");
 		p = talloc_strdup_append_buffer(p, "@");
 		break;
 
 	case JPATH_SELECTOR_WILDCARD:
+printf("JPATH_SELECTOR_WILDCARD '.*'\n");
 		p = talloc_strdup_append_buffer(p, ".*");
 		break;
 
 	case JPATH_SELECTOR_FIELD:
 	{
 		char buffer[257];
+printf("JPATH_SELECTOR_FIELD '%s'\n", node->selector->field);
 
 		fr_jpath_escape_func(NULL, buffer, sizeof(buffer), node->selector->field, NULL);
+//printf("--'%s'\n", node->selector->field);
+//printf("=='%s'\n", buffer);
 		p = talloc_asprintf_append_buffer(p, ".%s", buffer);
 	}
 		break;
@@ -454,6 +460,7 @@ char *fr_jpath_asprint(TALLOC_CTX *ctx, fr_jpath_node_t const *head)
 		for (selector = node->selector; selector; selector = selector->next) switch (selector->type) {
 		case JPATH_SELECTOR_INDEX:
 			p = talloc_asprintf_append_buffer(p, "%i%s", selector->slice[0], selector->next ? "," : "");
+printf("  JPATH_SELECTOR_INDEX '%s'\n", p);
 			break;
 
 		case JPATH_SELECTOR_SLICE:
@@ -473,6 +480,7 @@ char *fr_jpath_asprint(TALLOC_CTX *ctx, fr_jpath_node_t const *head)
 				p = talloc_asprintf_append_buffer(p, "%i", selector->slice[2]);
 			}
 			if (selector->next) p = talloc_strdup_append_buffer(p, ",");
+printf("  JPATH_SELECTOR_SLICE '%s'\n", p);
 			break;
 
 		default:
@@ -483,6 +491,7 @@ char *fr_jpath_asprint(TALLOC_CTX *ctx, fr_jpath_node_t const *head)
 		break;
 
 	case JPATH_SELECTOR_RECURSIVE_DESCENT:
+printf("JPATH_SELECTOR_RECURSIVE_DESCENT\n");
 		if (node->next) switch (node->next->selector->type) {
 		case JPATH_SELECTOR_SLICE:
 		case JPATH_SELECTOR_INDEX:
@@ -701,11 +710,20 @@ static size_t jpath_field_parse(fr_jpath_node_t *node, char const *in, size_t in
 		case '\\':
 			if (++p == end) return p - in;
 
-			if (memchr(escape_chars, p[0], sizeof(escape_chars))) {
-				*buff_p++ = *p++;
+/*
+			if (*p == '\\') {
+				*buff_p++ = '\\';
 				continue;
 			}
-			*buff_p++ = '\\';
+*/
+
+			if (memchr(escape_chars, p[0], sizeof(escape_chars))) {
+//				if (*p != '\\') {
+					*buff_p++ = *p++;
+//				}
+				continue;
+			}
+//			*buff_p++ = '\\';
 			continue;
 
 		/*

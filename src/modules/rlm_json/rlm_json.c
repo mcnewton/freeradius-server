@@ -129,6 +129,7 @@ static xlat_action_t jpath_validate_xlat(TALLOC_CTX *ctx, fr_cursor_t *out, REQU
 	}
 
 	slen = fr_jpath_parse(ctx, &head, (*in)->vb_strvalue, (*in)->vb_length);
+printf("INPUT: >>%s<<\n", (*in)->vb_strvalue);
 
 	MEM(vb = fr_value_box_alloc_null(ctx));
 

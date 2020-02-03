@@ -93,8 +93,22 @@ if ("%{jpathvalidate:$.foo.bar\[\]}" == '13:$.foo.bar\[\]') {
 	test_fail
 }
 
-# 13. Expect success - Non escape sequence
-if ("%{jpathvalidate:$.foo.bar\@}" == '11:$.foo.bar\@') {
+update control {
+	&Tmp-String-9 := '$.foo\\\\\@'
+}
+
+if ("%{jpathvalidate:%{control:Tmp-String-9}}" == '11:$.foo.bar@') {
+	test_pass
+} else {
+	test_fail
+}
+
+test_fail
+
+# 13. Expect success - Non escape sequence, redundant escape is
+# removed
+#if ("%{jpathvalidate:$.foo.bar\@}" == '11:$.foo.bar@') {
+if ("%{jpathvalidate:$.fo\no@}" == '11:$.foo.bar@') {
 	test_pass
 } else {
 	test_fail
