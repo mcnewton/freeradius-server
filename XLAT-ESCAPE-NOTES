@@ -1,0 +1,333 @@
+
+"special" characters that need escaping?
+
+$ (at the beginning only, elsewhere? probably not)
+@ (at the beginning only, elsewhere? probably not)
+[ (start of array)
+] (end of array)
+
+
+
+--\[-- =unesc=> --[-- (wasn't an index) =esc=> --\[--
+
+
+
+--[-- =unesc=> SELECTOR_INDEX =esc=>  --[--
+
+
+--\\-- =unesc=> --\-- =esc=> --\\--
+
+
+--\@-- =unesc=> --\@-- =esc=> --\@--
+
+--\@-- =unesc=> --@-- =esc=> --@--
+
+
+
+INPUTS
+
+update request {
+	&Tmp-String-1 := <below>
+}
+
+if ("%{jpathvalidate:%{Tmp-String-1}}"...)
+
+
+'$.foo@'  ->  $.foo@
+'$.foo\@'  ->  $.foo\@
+'$.foo\\@'  ->  $.foo\@
+'$.foo\\\@'  ->  $.foo\\@
+'$.foo\\\\@'  ->  $.foo\\@
+'$.foo\\\\\@'  ->  $.foo\\\@
+'$.fo\no@"  ->  $.fo\no@
+
+"$.foo@"  ->  $.foo@
+"$.foo\@"  ->  $.foo\@
+"$.foo\\@"  ->  $.foo\@
+"$.foo\\\@"  ->  $.foo\\@
+"$.foo\\\\@"  ->  $.foo\\@
+"$.foo\\\\\@"  ->  $.foo\\\@
+"$.fo\no@"  ->  $.fo
+no@
+
+
+if ("%{jpathvalidate:<below>}"...)
+
+$.foo@  ->  $.foo@
+$.foo\@  ->  $.foo\@
+$.foo\\@  ->  $.foo\@
+$.foo\\\@  ->  $.foo\\@
+$.foo\\\\@  ->  $.foo\\@
+$.foo\\\\\@  ->  $.foo\\\@
+$.fo\no@  ->  $.fo
+no@
+
+
+
+jpath_validate xlat
+
+$.fo\no@  ->  8:$.fono@
+$.foo@  ->  6:$.foo@
+$.foo\@  ->  7:$.foo@
+$.foo\\@  ->  8:$.foo\\@
+$.foo\\\@  ->  9:$.foo\\@
+
+
+old jpath_validate xlat
+
+$.fo\no@  ->  8:$.fo\no@
+$.foo@  ->  6:$.foo@
+$.foo\@  ->  7:$.foo\@
+$.foo\\@  ->  8:$.foo\@
+$.foo\\\@  ->  9:$.foo\\@
+
+
+
+
+Behaviour using old XLAT code (7b94f4648b616bf481a2b52cd64eb3095b365ad1)
+========================================================================
+
+    if ("%{jpathvalidate:%{control:Tmp-String-9}}" == 'a') {
+      noop
+    }
+
+    test_fail
+
+Where Tmp-String-9 is:
+
+'$.fono@'		7:$.fono@
+'$.fon\o@'		8:$.fon\o@
+'$.fon\\o@'		8:$.fon\o@
+'$.fon\\\o@'		9:$.fon\o@
+'$.fon\\\\o@'		9:$.fon\o@
+'$.fon\\\\\o@'		10:$.fon\\o@
+'$.fon\\\\\\o@'		10:$.fon\\o@
+'$.fon\\\\\\\o@'	11:$.fon\\o@
+
+"$.fono@"		7:$.fono@
+"$.fon\o@"		8:$.fon\o@
+"$.fon\\o@"		8:$.fon\o@
+"$.fon\\\o@"		9:$.fon\o@
+"$.fon\\\\o@"		9:$.fon\o@
+"$.fon\\\\\o@"		10:$.fon\\o@
+"$.fon\\\\\\o@"		10:$.fon\\o@
+"$.fon\\\\\\\o@"	11:$.fon\\o@
+
+
+"$.fono@"		7:$.fono@
+"$.fono\@"		8:$.fono\@
+"$.fono\\@"		8:$.fono\@
+"$.fono\\\@"		9:$.fono\@
+"$.fono\\\\@"		9:$.fono\@
+"$.fono\\\\\@"		10:$.fono\\@
+"$.fono\\\\\\@"		10:$.fono\\@
+"$.fono\\\\\\\@"	11:$.fono\\@
+
+"$.fo\no@"		Bad UTF8 char
+"$.fo\\no@"		8:$.fo\no@
+"$.fo\\\no@"		Bad UTF8 char
+"$.fo\\\\no@"		9:$.fo\no@
+"$.fo\\\\\no@"		Bad UTF8 char
+"$.fo\\\\\\no@"		10:$.fo\\no@
+"$.fo\\\\\\\no@"	Bad UTF8 char
+
+'$.fo\no@'		8:$.fo\no@
+'$.fo\\no@'		8:$.fo\no@
+'$.fo\\\no@'		9:$.fo\no@
+'$.fo\\\\no@'		9:$.fo\no@
+'$.fo\\\\\no@'		10:$.fo\\no@
+'$.fo\\\\\\no@'		10:$.fo\\no@
+'$.fo\\\\\\\no@'	11:$.fo\\no@
+
+Directly in XLAT:
+
+    if ("%{jpathvalidate:$.fono@}" == 'a') {
+      noop
+    }
+
+if ("%{jpathvalidate:$.fono@}" == 'a') {
+EXPAND %{jpathvalidate:$.fono@}
+   --> 7:$.fono@
+
+if ("%{jpathvalidate:$.fon\o@}" == 'a') {
+EXPAND %{jpathvalidate:$.fon\o@}
+   --> 8:$.fon\o@
+
+if ("%{jpathvalidate:$.fon\\o@}" == 'a') {
+EXPAND %{jpathvalidate:$.fon\o@}
+   --> 8:$.fon\o@
+
+if ("%{jpathvalidate:$.fon\\\o@}" == 'a') {
+EXPAND %{jpathvalidate:$.fon\\o@}
+   --> 8:$.fon\o@
+
+if ("%{jpathvalidate:$.fon\\\\o@}" == 'a') {
+EXPAND %{jpathvalidate:$.fon\\o@}
+   --> 8:$.fon\o@
+
+if ("%{jpathvalidate:$.fon\\\\\o@}" == 'a') {
+EXPAND %{jpathvalidate:$.fon\\\o@}
+   --> 9:$.fon\o@
+
+if ("%{jpathvalidate:$.fon\\\\\\o@}" == 'a') {
+EXPAND %{jpathvalidate:$.fon\\\o@}
+   --> 9:$.fon\o@
+
+
+
+
+if ("%{jpathvalidate:$.fono@}" == 'a') {
+EXPAND %{jpathvalidate:$.fono@}
+   --> 7:$.fono@
+
+if ("%{jpathvalidate:$.fono\@}" == 'a') {
+EXPAND %{jpathvalidate:$.fono\@}
+   --> 8:$.fono\@
+
+if ("%{jpathvalidate:$.fono\\@}" == 'a') {
+EXPAND %{jpathvalidate:$.fono\@}
+   --> 8:$.fono\@
+
+if ("%{jpathvalidate:$.fono\\\@}" == 'a') {
+EXPAND %{jpathvalidate:$.fono\\@}
+   --> 8:$.fono\@
+
+if ("%{jpathvalidate:$.fono\\\\@}" == 'a') {
+EXPAND %{jpathvalidate:$.fono\\@}
+   --> 8:$.fono\@
+
+if ("%{jpathvalidate:$.fono\\\\\@}" == 'a') {
+EXPAND %{jpathvalidate:$.fono\\\@}
+   --> 9:$.fono\@
+
+if ("%{jpathvalidate:$.fono\\\\\\@}" == 'a') {
+EXPAND %{jpathvalidate:$.fono\\\@}
+   --> 9:$.fono\@
+
+
+
+
+
+General parse errors/issues
+===========================
+
+
+CASE A
+======
+
+
+if ("%{jpathvalidate:$.fon\}o@}" == 'a') {
+  noop
+}
+
+Expected:
+XLAT Input:   $.fon}o@
+Output:       $.fon}o@
+
+Got:
+
+Wed Feb 12 11:49:12 2020: Debug : (0)    if ("%{jpathvalidate:$.fon}o@}" == 'b') {
+Wed Feb 12 11:49:12 2020: Debug : (0)      EXPAND %{jpathvalidate:$.fon}o@}
+INPUT: >>$.fon<<
+
+--> Uh?
+
+JPATH_SELECTOR_ROOT '$'
+JPATH_SELECTOR_FIELD 'fon'
+Wed Feb 12 11:49:12 2020: Debug : (0)      EXPAND %{jpathvalidate:$.fon}
+Wed Feb 12 11:49:12 2020: Debug : (0)        --> 5:$.fon
+Wed Feb 12 11:49:12 2020: Debug : (0)         --> 5:$.fono@}
+
+--> Nope...
+
+Wed Feb 12 11:49:12 2020: Debug : (0)      ...
+Wed Feb 12 11:49:12 2020: Debug : (0)    }
+
+
+
+
+
+
+CASE B
+======
+
+
+if ("%{jpathvalidate:$.fon}o@}" == 'b') {
+  noop
+}
+
+Expected:
+XLAT Input:   $.fon
+Output:       $.fono@}
+
+Got:
+
+Wed Feb 12 11:49:12 2020: Debug : (0)    if ("%{jpathvalidate:$.fon}o@}" == 'b') {
+Wed Feb 12 11:49:12 2020: Debug : (0)      EXPAND %{jpathvalidate:$.fon}o@}
+INPUT: >>$.fon<<
+JPATH_SELECTOR_ROOT '$'
+JPATH_SELECTOR_FIELD 'fon'
+Wed Feb 12 11:49:12 2020: Debug : (0)      EXPAND %{jpathvalidate:$.fon}
+Wed Feb 12 11:49:12 2020: Debug : (0)        --> 5:$.fon
+Wed Feb 12 11:49:12 2020: Debug : (0)         --> 5:$.fono@}
+
+--> GOOD
+
+Wed Feb 12 11:49:12 2020: Debug : (0)      ...
+Wed Feb 12 11:49:12 2020: Debug : (0)    }
+
+
+
+CASE C
+======
+
+
+if ("%{jpathvalidate:$.fono@\}" == 'c') {
+  noop
+}
+
+Expected: <ERROR> - Unable to parse XLAT due to end } missing
+
+Got:
+
+Wed Feb 12 11:50:18 2020: Error : src/tests/modules/json/parser.unlang[111]: Failed parsing expansion string:
+Wed Feb 12 11:50:18 2020: Error : src/tests/modules/json/parser.unlang[111]: (null)
+Wed Feb 12 11:50:18 2020: Error : src/tests/modules/json/parser.unlang[111]: (null)^ Missing closing brace at end of string
+Wed Feb 12 11:50:18 2020: Error : src/tests/modules/json/parser.unlang[111]: Failed to parse "if" subsection
+Wed Feb 12 11:50:18 2020: Error : src/tests/modules//unit_test_module.conf[30]: Could not load virtual server "default".
+
+--> GOOD
+
+
+
+
+if ("%{jpathvalidate:$.fono@\\\}" == 'd') {
+  noop
+}
+
+Expected: <ERROR> - Unable to parse XLAT due to end } missing
+But XLAT input would have been:   $.fono@\}
+
+Got:
+
+XLAT Input: $.fono@\\
+
+What happened to the "\}" ?
+
+Wed Feb 12 11:50:55 2020: Debug : (0)    if ("%{jpathvalidate:$.fono@\\\}" == 'd') {
+Wed Feb 12 11:50:55 2020: Debug : (0)      EXPAND %{jpathvalidate:$.fono@\\}
+INPUT: >>$.fono@\\<<
+
+--> How?
+
+JPATH_SELECTOR_ROOT '$'
+JPATH_SELECTOR_FIELD 'fono@\'
+Wed Feb 12 11:50:55 2020: Debug : (0)      EXPAND %{jpathvalidate:$.fono@\\}
+Wed Feb 12 11:50:55 2020: Debug : (0)        --> 9:$.fono@\\\\
+Wed Feb 12 11:50:55 2020: Debug : (0)         --> 9:$.fono@\\
+
+--> Uh, no.
+
+Wed Feb 12 11:50:55 2020: Debug : (0)      ...
+Wed Feb 12 11:50:55 2020: Debug : (0)    }
+

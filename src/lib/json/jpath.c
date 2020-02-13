@@ -701,14 +701,22 @@ static size_t jpath_field_parse(fr_jpath_node_t *node, char const *in, size_t in
 
 		switch (p[0]) {				/* Normal char */
 		default:
+printf("-NORM-> %c\n", p[0]);
 			*buff_p++ = *p++;
+printf(" LENG-> %d\n", p - in);
+printf(" BUFF-> %c\n", buff_p[-1]);
 			continue;
 
 		/*
 		 *	Escape sequence
 		 */
 		case '\\':
+printf("-ESCP-> %c\n", p[0]);
+printf(" LENG-> %d\n", p - in);
+printf(" LEN2-> %d\n", (p+1) - in);
+printf(" BUFF-> %c\n", buff_p[-1]);
 			if (++p == end) return p - in;
+printf(" ESCC-> %c\n", p[0]);
 
 /*
 			if (*p == '\\') {
@@ -723,7 +731,7 @@ static size_t jpath_field_parse(fr_jpath_node_t *node, char const *in, size_t in
 //				}
 				continue;
 			}
-//			*buff_p++ = '\\';
+			*buff_p++ = '\\';
 			continue;
 
 		/*

@@ -93,9 +93,39 @@ if ("%{jpathvalidate:$.foo.bar\[\]}" == '13:$.foo.bar\[\]') {
 	test_fail
 }
 
-update control {
-	&Tmp-String-9 := '$.foo\\\\\@'
+#update control {
+#	&Tmp-String-9 := '$.fo\no@'
+#}
+#
+#if ("%{jpathvalidate:%{control:Tmp-String-9}}" == 'a') {
+#	noop
+#}
+#test_fail
+
+if ("%{jpathvalidate:$.fono@}" == 'a') {
+  noop
 }
+if ("%{jpathvalidate:$.fono\@}" == 'a') {
+  noop
+}
+if ("%{jpathvalidate:$.fono\\@}" == 'a') {
+  noop
+}
+if ("%{jpathvalidate:$.fono\\\@}" == 'a') {
+  noop
+}
+if ("%{jpathvalidate:$.fono\\\\@}" == 'a') {
+  noop
+}
+if ("%{jpathvalidate:$.fono\\\\\@}" == 'a') {
+  noop
+}
+if ("%{jpathvalidate:$.fono\\\\\\@}" == 'a') {
+  noop
+}
+
+test_fail
+
 
 if ("%{jpathvalidate:%{control:Tmp-String-9}}" == '11:$.foo.bar@') {
 	test_pass

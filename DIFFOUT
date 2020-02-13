@@ -1,0 +1,21 @@
+old code
+
+B1 '$.foo.bar\@'
+$=''
+--'foo'
+=='foo'
+--'bar\@'
+=='bar\\@'
+B2 '$.foo.bar\\@'
+B3 '11:$.foo.bar\\@'
+
+new code
+
+N1 '$.foo.bar\@'
+$=''
+--'foo'
+=='foo'
+--'bar\@'
+=='bar\\@'
+N2 '$.foo.bar\\@'
+N3 '11:$.foo.bar\\@'
