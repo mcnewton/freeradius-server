@@ -38,19 +38,32 @@ static json_object	*json_array_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps
 						    fr_json_format_t const *format);
 
 static fr_json_format_t const default_json_format = {
-	.include_type = true,
-	.prefix = NULL
+	.attr = { .prefix = NULL },
+	.value = { .value_as_list = true },
+	.include_type = true
 };
 
+CONF_PARSER const json_format_attr_config[] = {
+	{ FR_CONF_OFFSET("prefix", FR_TYPE_STRING, fr_json_format_attr_t, prefix) },
+	CONF_PARSER_TERMINATOR
+};
+
+CONF_PARSER const json_format_value_config[] = {
+	{ FR_CONF_OFFSET("single_value_as_array", FR_TYPE_BOOL, fr_json_format_value_t, value_as_list), .dflt = "no" },
+	{ FR_CONF_OFFSET("enum_as_integer", FR_TYPE_BOOL, fr_json_format_value_t, enum_value), .dflt = "no" },
+	{ FR_CONF_OFFSET("always_string", FR_TYPE_BOOL, fr_json_format_value_t, always_string), .dflt = "no" },
+	CONF_PARSER_TERMINATOR
+};
 
 CONF_PARSER const fr_json_format_config[] = {
+	{ FR_CONF_OFFSET("attribute", FR_TYPE_SUBSECTION, fr_json_format_t, attr),
+		.subcs = (void const *) json_format_attr_config },
+	{ FR_CONF_OFFSET("value", FR_TYPE_SUBSECTION, fr_json_format_t, value),
+		.subcs = (void const *) json_format_value_config },
+
 	{ FR_CONF_OFFSET("output_as_array", FR_TYPE_BOOL, fr_json_format_t, format_array), .dflt = "no" },
 	{ FR_CONF_OFFSET("simple", FR_TYPE_BOOL, fr_json_format_t, simple), .dflt = "no" },
 	{ FR_CONF_OFFSET("include_attribute_type", FR_TYPE_BOOL, fr_json_format_t, include_type), .dflt = "yes" },
-	{ FR_CONF_OFFSET("attribute_values_as_array", FR_TYPE_BOOL, fr_json_format_t, value_as_list), .dflt = "no" },
-	{ FR_CONF_OFFSET("use_enum_values", FR_TYPE_BOOL, fr_json_format_t, enum_value), .dflt = "no" },
-	{ FR_CONF_OFFSET("force_always_string", FR_TYPE_BOOL, fr_json_format_t, always_string), .dflt = "no" },
-	{ FR_CONF_OFFSET("prefix", FR_TYPE_STRING, fr_json_format_t, prefix) },
 
 	CONF_PARSER_TERMINATOR
 };
@@ -388,12 +401,12 @@ static int json_afrom_value_box(TALLOC_CTX *ctx, json_object **out,
 
 	vb = &vp->data;
 
-	if (format->enum_value) {
+	if (format->value.enum_value) {
 		is_enum = fr_pair_value_enum_box(&vb, vp);
 		rad_assert(is_enum >= 0);
 	}
 
-	if (format->always_string) {
+	if (format->value.always_string) {
 		if (fr_value_box_cast(ctx, &vb_str, FR_TYPE_STRING, NULL, vb) == 0) {
 			vb = &vb_str;
 		} else {
@@ -403,7 +416,7 @@ static int json_afrom_value_box(TALLOC_CTX *ctx, json_object **out,
 
 	MEM(obj = json_object_from_value_box(ctx, vb));
 
-	if (format->always_string) {
+	if (format->value.always_string) {
 		fr_value_box_clear(&vb_str);
 	}
 
@@ -452,8 +465,8 @@ static json_object *json_dict_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps,
 		 *	attribute name.
 		 */
 		name_with_prefix = vp->da->name;
-		if (format->prefix) {
-			int len = snprintf(buf, sizeof(buf), "%s:%s", format->prefix, vp->da->name);
+		if (format->attr.prefix) {
+			int len = snprintf(buf, sizeof(buf), "%s:%s", format->attr.prefix, vp->da->name);
 			if (len == (int)strlen(buf)) {
 				name_with_prefix = buf;
 			}
@@ -465,7 +478,7 @@ static json_object *json_dict_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps,
 		 */
 		if (!json_object_object_get_ex(obj, name_with_prefix, &vp_object)) {
 			if (format->simple) {
-				if (format->value_as_list) {
+				if (format->value.value_as_list) {
 					/*
 					 *	We have been asked to ensure /all/ values are lists,
 					 *	even if there's only one attribute.
@@ -601,7 +614,7 @@ static struct json_object *json_array_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAI
 	/*
 	 *	If attribute values should be in a list format, then keep track of the attributes we've seen in a JSON object.
 	 */
-	if (format->value_as_list) {
+	if (format->value.value_as_list) {
 		seen_attributes = json_object_new_object();
 	}
 
@@ -635,8 +648,8 @@ static struct json_object *json_array_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAI
 		 *	attribute name.
 		 */
 		name_with_prefix = vp->da->name;
-		if (format->prefix) {
-			int len = snprintf(buf, sizeof(buf), "%s:%s", format->prefix, vp->da->name);
+		if (format->attr.prefix) {
+			int len = snprintf(buf, sizeof(buf), "%s:%s", format->attr.prefix, vp->da->name);
 			if (len == (int)strlen(buf)) {
 				name_with_prefix = buf;
 			}
@@ -647,7 +660,7 @@ static struct json_object *json_array_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAI
 		 */
 		json_afrom_value_box(ctx, &value, vp, format);
 
-		if (format->value_as_list) {
+		if (format->value.value_as_list) {
 			/*
 			 *	Try and find this attribute in the "seen_attributes" object. If it's
 			 *	there then get the "values" array to add this attribute value to.
@@ -660,7 +673,7 @@ static struct json_object *json_array_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAI
 		 *	to an array of an existing attribute but haven't seen it before, then we need
 		 *	to create a new JSON object for this attribute.
 		 */
-		if (!format->value_as_list || !already_seen) {
+		if (!format->value.value_as_list || !already_seen) {
 			/* Create object and add it to top-level array */
 			MEM(attrobj = json_object_new_object());
 			json_object_array_add(obj, attrobj);
@@ -676,7 +689,7 @@ static struct json_object *json_array_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAI
 			}
 		}
 
-		if (format->value_as_list) {
+		if (format->value.value_as_list) {
 			/*
 			 *	We're adding values to an array for the first copy of this attribute
 			 *	that we saw. First time around we need to create an array...

@@ -161,20 +161,29 @@ RCSIDH(json_h, "$Id$")
 @endverbatim
  *
  */
-struct fr_json_format_s {
-	bool	format_array;	//!< When true, output is an array. Otherwise an object.
 
-	bool	simple;		//!< Use a simplified output format.
 
-	bool	include_type;	//!< Include attribute type where possible.
-
-	bool	value_as_list;	//!< Use JSON array for multiple attribute values.
-
-	bool	always_string;	//!< Output all data types as strings.
-
-	bool	enum_value;	//!< Output enums as value, not their string representation.
-
+typedef struct {
 	char const *prefix;	//!< Prefix to add to all attribute names
+} fr_json_format_attr_t;
+
+
+typedef struct {
+	bool	value_as_list;	//!< Use JSON array for multiple attribute values.
+	bool	enum_value;	//!< Output enums as value, not their string representation.
+	bool	always_string;	//!< Output all data types as strings.
+} fr_json_format_value_t;
+
+
+struct fr_json_format_s {
+	char const		*output_format_str;
+
+	fr_json_format_attr_t	attr;
+	fr_json_format_value_t	value;
+
+	bool			format_array;	//!< When true, output is an array. Otherwise an object.
+	bool			simple;		//!< Use a simplified output format.
+	bool			include_type;	//!< Include attribute type where possible.
 };
 
 typedef struct fr_json_format_s fr_json_format_t;
