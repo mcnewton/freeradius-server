@@ -49,7 +49,7 @@ typedef struct {
 
 
 static CONF_PARSER const module_config[] = {
-	{ FR_CONF_OFFSET("encode_format", FR_TYPE_SUBSECTION, rlm_json_t, format),
+	{ FR_CONF_OFFSET("encode", FR_TYPE_SUBSECTION, rlm_json_t, format),
 	  .subcs_size = sizeof(fr_json_format_t), .subcs_type = "fr_json_format_t",
 	  .subcs = (void const *) fr_json_format_config },
 
