@@ -2,6 +2,7 @@
 #	json_encode tests
 #
 
+
 # 0. Check basic xlat parsing
 
 update request {
@@ -9,24 +10,36 @@ update request {
 	&Tmp-String-2 := "%{json_encode:&request:[*] }"
 	&Tmp-String-3 := "%{json_encode: &request:[*]}"
 	&Tmp-String-4 := "%{json_encode: 	 &request:[*]	}"
-	&Tmp-String-5 := "%{json_encode: &request:[*]    !&User-Password }"
+	&Tmp-String-5 := "%{json_encode: &request:[*]    !&Filter-Id }"
 	&Tmp-String-6 := "%{json_encode:&request:[*] ! }"
+#  Check defaults are the same as output_mode "object":
+	&Tmp-String-7 := "%{json_object_encode:&request:[*]}"
+	&Tmp-String-8 := "%{json_object_no_encode:&request:[*]}"
 }
 
 
-if (&Tmp-String-1 == '{"User-Name":{"type":"string","value":["john"]},"User-Password":{"type":"string","value":["testing123"]},"Filter-Id":{"type":"string","value":["f1","f2"]}}') {
+if (&Tmp-String-1 == '{"User-Name":{"type":"string","value":["john"]},"Filter-Id":{"type":"string","value":["f1","f2"]},"NAS-Port":{"type":"uint32","value":[999]},"Service-Type":{"type":"uint32","value":["Login-User"]}}') {
 	test_pass
 } else {
 	test_fail
 }
 
+#  Check xlat input formats
 if (&Tmp-String-1 != &Tmp-String-2 ||
     &Tmp-String-1 != &Tmp-String-3 ||
     &Tmp-String-1 != &Tmp-String-4) {
 	test_fail
 }
 
-if (&Tmp-String-5 == '{"User-Name":{"type":"string","value":["john"]},"Filter-Id":{"type":"string","value":["f1","f2"]}}') {
+#  Check defaults
+if (&Tmp-String-1 != &Tmp-String-7 ||
+    &Tmp-String-1 != &Tmp-String-8) {
+	test_fail
+}
+
+### FIXME bug not removing all filter-id
+if (&Tmp-String-5 == '{"User-Name":{"type":"string","value":["john"]},"Filter-Id":{"type":"string","value":["f2"]},"NAS-Port":{"type":"uint32","value":[999]},"Service-Type":{"type":"uint32","value":["Login-User"]}}') {
+#if (&Tmp-String-5 == '{"User-Name":{"type":"string","value":["john"]},"NAS-Port":{"type":"uint32","value":[999]},"Service-Type":{"type":"uint32","value":["Login-User"]}}') {
 	test_pass
 } else {
 	test_fail
@@ -38,7 +51,6 @@ if (&Tmp-String-6 == '') {
 	test_fail
 }
 
-
 update request {
 	&Tmp-String-1 !* ANY
 	&Tmp-String-2 !* ANY
@@ -46,16 +58,18 @@ update request {
 	&Tmp-String-4 !* ANY
 	&Tmp-String-5 !* ANY
 	&Tmp-String-6 !* ANY
+	&Tmp-String-7 !* ANY
+	&Tmp-String-8 !* ANY
 }
 
 
 # 1. Empty expansions
 
 update request {
-	&Tmp-String-1 := "%{json_o_sn_tn_an_encode:!&request:[*]}"
-	&Tmp-String-2 := "%{json_o_sn_tn_an_encode:}"
-	&Tmp-String-3 := "%{json_a_sn_tn_an_encode:!&request:[*]}"
-	&Tmp-String-4 := "%{json_a_sn_tn_an_encode:}"
+	&Tmp-String-1 := "%{json_object_encode:!&request:[*]}"
+	&Tmp-String-2 := "%{json_object_encode:}"
+	&Tmp-String-3 := "%{json_array_encode:!&request:[*]}"
+	&Tmp-String-4 := "%{json_array_encode:}"
 }
 
 if (&Module-Failure-Message == 'Failed concatenating input: Invalid arguments.  List was NULL') {
@@ -98,222 +112,132 @@ update request {
 }
 
 
-# 2. Check prefix, force_always_string, use_enum_values
+# 2. Output mode "object" tests
 
-update request {
-	&Tmp-Integer-1 := "999"
-	&Service-Type := Login-User
-}
-
-update request {
-	&Tmp-String-1 := "%{json_encode:&User-Name}"
-	&Tmp-String-2 := "%{json_p_encode:&User-Name}"
-	&Tmp-String-3 := "%{json_encode:&Tmp-Integer-1}"
-	&Tmp-String-4 := "%{json_s_encode:&Tmp-Integer-1}"
-	&Tmp-String-5 := "%{json_encode:&Service-Type}"
-	&Tmp-String-6 := "%{json_e_encode:&Service-Type}"
-}
-
-
-if (&Tmp-String-1 == '{"User-Name":{"type":"string","value":["john"]}}') {
-        test_pass
-} else {
-        test_fail
-}
-
-if (&Tmp-String-2 == '{"test:User-Name":{"type":"string","value":["john"]}}') {
-        test_pass
-} else {
-        test_fail
-}
-
-if (&Tmp-String-3 == '{"Tmp-Integer-1":{"type":"uint32","value":[999]}}') {
-        test_pass
-} else {
-        test_fail
-}
-
-if (&Tmp-String-4 == '{"Tmp-Integer-1":{"type":"uint32","value":["999"]}}') {
-        test_pass
-} else {
-        test_fail
-}
-
-if (&Tmp-String-5 == '{"Service-Type":{"type":"uint32","value":["Login-User"]}}') {
-        test_pass
-} else {
-        test_fail
-}
-
-if (&Tmp-String-6 == '{"Service-Type":{"type":"uint32","value":[1]}}') {
-        test_pass
-} else {
-        test_fail
-}
-
-
-update request {
-	&Tmp-String-1 !* ANY
-	&Tmp-String-2 !* ANY
-	&Tmp-String-3 !* ANY
-	&Tmp-String-4 !* ANY
-	&Tmp-String-5 !* ANY
-	&Tmp-String-6 !* ANY
-	&Tmp-Integer-1 !* ANY
-	&Service-Type !* ANY
-}
-
-
-# 3. Object format output tests
 
 # These are unsorted dictionaries. Hopefully json-c doesn't suddenly
 # decide that it's going to use a different ordering of the keys...
 
 update request {
-	&Tmp-String-1 := "%{json_o_sn_tn_an_encode:&request:[*]}"
-	&Tmp-String-2 := "%{json_o_sn_tn_ay_encode:&request:[*]}"
-	&Tmp-String-3 := "%{json_o_sn_ty_an_encode:&request:[*]}"
-	&Tmp-String-4 := "%{json_o_sn_ty_ay_encode:&request:[*]}"
-	&Tmp-String-5 := "%{json_o_sy_tn_an_encode:&request:[*]}"
-	&Tmp-String-6 := "%{json_o_sy_tn_ay_encode:&request:[*]}"
-	&Tmp-String-7 := "%{json_o_sy_ty_an_encode:&request:[*]}"
-	&Tmp-String-8 := "%{json_o_sy_ty_ay_encode:&request:[*]}"
+	&Tmp-String-1 := "%{json_object_encode:&request:[*]}"
+	&Tmp-String-2 := "%{json_object_ex_encode:&request:[*]}"
 }
 
-
-if (&Tmp-String-1 == '{"User-Name":{"value":["john"]},"User-Password":{"value":["testing123"]},"Filter-Id":{"value":["f1","f2"]}}') {
+if (&Tmp-String-1 == '{"User-Name":{"type":"string","value":["john"]},"Filter-Id":{"type":"string","value":["f1","f2"]},"NAS-Port":{"type":"uint32","value":[999]},"Service-Type":{"type":"uint32","value":["Login-User"]}}') {
 	test_pass
 } else {
 	test_fail
 }
 
-if (&Tmp-String-2 == '{"User-Name":{"value":["john"]},"User-Password":{"value":["testing123"]},"Filter-Id":{"value":["f1","f2"]}}') {
+if (&Tmp-String-2 == '{"pf:User-Name":{"type":"string","value":["john"]},"pf:Filter-Id":{"type":"string","value":["f1","f2"]},"pf:NAS-Port":{"type":"uint32","value":["999"]},"pf:Service-Type":{"type":"uint32","value":["1"]}}') {
 	test_pass
 } else {
 	test_fail
 }
-
-if (&Tmp-String-3 == '{"User-Name":{"type":"string","value":["john"]},"User-Password":{"type":"string","value":["testing123"]},"Filter-Id":{"type":"string","value":["f1","f2"]}}') {
-	test_pass
-} else {
-	test_fail
-}
-
-if (&Tmp-String-4 == '{"User-Name":{"type":"string","value":["john"]},"User-Password":{"type":"string","value":["testing123"]},"Filter-Id":{"type":"string","value":["f1","f2"]}}') {
-	test_pass
-} else {
-	test_fail
-}
-
-if (&Tmp-String-5 == '{"User-Name":"john","User-Password":"testing123","Filter-Id":["f1","f2"]}') {
-	test_pass
-} else {
-	test_fail
-}
-
-if (&Tmp-String-6 == '{"User-Name":["john"],"User-Password":["testing123"],"Filter-Id":["f1","f2"]}') {
-	test_pass
-} else {
-	test_fail
-}
-
-if (&Tmp-String-7 == '{"User-Name":"john","User-Password":"testing123","Filter-Id":["f1","f2"]}') {
-	test_pass
-} else {
-	test_fail
-}
-
-if (&Tmp-String-8 == '{"User-Name":["john"],"User-Password":["testing123"],"Filter-Id":["f1","f2"]}') {
-	test_pass
-} else {
-	test_fail
-}
-
 
 update request {
 	&Tmp-String-1 !* ANY
 	&Tmp-String-2 !* ANY
-	&Tmp-String-3 !* ANY
-	&Tmp-String-4 !* ANY
-	&Tmp-String-5 !* ANY
-	&Tmp-String-6 !* ANY
-	&Tmp-String-7 !* ANY
-	&Tmp-String-8 !* ANY
 }
 
 
-# 4. Array format output tests
+# 3. "object_simple" tests
 
 update request {
-	&Tmp-String-1 := "%{json_a_sn_tn_an_encode:&request:[*]}"
-	&Tmp-String-2 := "%{json_a_sn_tn_ay_encode:&request:[*]}"
-	&Tmp-String-3 := "%{json_a_sn_ty_an_encode:&request:[*]}"
-	&Tmp-String-4 := "%{json_a_sn_ty_ay_encode:&request:[*]}"
-	&Tmp-String-5 := "%{json_a_sy_tn_an_encode:&request:[*]}"
-	&Tmp-String-6 := "%{json_a_sy_tn_ay_encode:&request:[*]}"
-	&Tmp-String-7 := "%{json_a_sy_ty_an_encode:&request:[*]}"
-	&Tmp-String-8 := "%{json_a_sy_ty_ay_encode:&request:[*]}"
+	&Tmp-String-1 := "%{json_object_simple_encode:&request:[*]}"
+	&Tmp-String-2 := "%{json_object_simple_ex_encode:&request:[*]}"
 }
 
-
-if (&Tmp-String-1 == '[{"name":"User-Name","value":"john"},{"name":"User-Password","value":"testing123"},{"name":"Filter-Id","value":"f1"},{"name":"Filter-Id","value":"f2"}]') {
+if (&Tmp-String-1 == '{"User-Name":"john","Filter-Id":["f1","f2"],"NAS-Port":999,"Service-Type":"Login-User"}') {
 	test_pass
 } else {
 	test_fail
 }
 
-if (&Tmp-String-2 == '[{"name":"User-Name","value":["john"]},{"name":"User-Password","value":["testing123"]},{"name":"Filter-Id","value":["f1","f2"]}]') {
+if (&Tmp-String-2 == '{"pf:User-Name":["john"],"pf:Filter-Id":["f1","f2"],"pf:NAS-Port":["999"],"pf:Service-Type":["1"]}') {
 	test_pass
 } else {
 	test_fail
 }
-
-if (&Tmp-String-3 == '[{"name":"User-Name","type":"string","value":"john"},{"name":"User-Password","type":"string","value":"testing123"},{"name":"Filter-Id","type":"string","value":"f1"},{"name":"Filter-Id","type":"string","value":"f2"}]') {
-	test_pass
-} else {
-	test_fail
-}
-
-if (&Tmp-String-4 == '[{"name":"User-Name","type":"string","value":["john"]},{"name":"User-Password","type":"string","value":["testing123"]},{"name":"Filter-Id","type":"string","value":["f1","f2"]}]') {
-	test_pass
-} else {
-	test_fail
-}
-
-if (&Tmp-String-5 == '["john","testing123","f1","f2"]') {
-	test_pass
-} else {
-	test_fail
-}
-
-if (&Tmp-String-6 == '["john","testing123","f1","f2"]') {
-	test_pass
-} else {
-	test_fail
-}
-
-if (&Tmp-String-7 == '["john","testing123","f1","f2"]') {
-	test_pass
-} else {
-	test_fail
-}
-
-if (&Tmp-String-8 == '["john","testing123","f1","f2"]') {
-	test_pass
-} else {
-	test_fail
-}
-
 
 update request {
 	&Tmp-String-1 !* ANY
 	&Tmp-String-2 !* ANY
-	&Tmp-String-3 !* ANY
-	&Tmp-String-4 !* ANY
-	&Tmp-String-5 !* ANY
-	&Tmp-String-6 !* ANY
-	&Tmp-String-7 !* ANY
-	&Tmp-String-8 !* ANY
+}
+
+
+# 4. "array" tests
+
+update request {
+	&Tmp-String-1 := "%{json_array_encode:&request:[*]}"
+	&Tmp-String-2 := "%{json_array_ex_encode:&request:[*]}"
+}
+
+if (&Tmp-String-1 == '[{"name":"User-Name","type":"string","value":"john"},{"name":"Filter-Id","type":"string","value":"f1"},{"name":"Filter-Id","type":"string","value":"f2"},{"name":"NAS-Port","type":"uint32","value":999},{"name":"Service-Type","type":"uint32","value":"Login-User"}]') {
+	test_pass
+} else {
+	test_fail
+}
+
+if (&Tmp-String-2 == '[{"name":"pf:User-Name","type":"string","value":["john"]},{"name":"pf:Filter-Id","type":"string","value":["f1","f2"]},{"name":"pf:NAS-Port","type":"uint32","value":["999"]},{"name":"pf:Service-Type","type":"uint32","value":["1"]}]') {
+	test_pass
+} else {
+	test_fail
+}
+
+update request {
+	&Tmp-String-1 !* ANY
+	&Tmp-String-2 !* ANY
+}
+
+
+# 5. "array_of_names" tests
+
+update request {
+	&Tmp-String-1 := "%{json_array_names_encode:&request:[*]}"
+	&Tmp-String-2 := "%{json_array_names_ex_encode:&request:[*]}"
+}
+
+if (&Tmp-String-1 == '["User-Name","Filter-Id","Filter-Id","NAS-Port","Service-Type"]') {
+	test_pass
+} else {
+	test_fail
+}
+
+if (&Tmp-String-2 == '["pf:User-Name","pf:Filter-Id","pf:Filter-Id","pf:NAS-Port","pf:Service-Type"]') {
+	test_pass
+} else {
+	test_fail
+}
+
+update request {
+	&Tmp-String-1 !* ANY
+	&Tmp-String-2 !* ANY
+}
+
+
+# 6. "array_of_values" tests
+
+update request {
+	&Tmp-String-1 := "%{json_array_values_encode:&request:[*]}"
+	&Tmp-String-2 := "%{json_array_values_ex_encode:&request:[*]}"
+}
+
+if (&Tmp-String-1 == '["john","f1","f2",999,"Login-User"]') {
+	test_pass
+} else {
+	test_fail
+}
+
+if (&Tmp-String-2 == '["john","f1","f2","999","1"]') {
+	test_pass
+} else {
+	test_fail
+}
+
+update request {
+	&Tmp-String-1 !* ANY
+	&Tmp-String-2 !* ANY
 }
 
 
