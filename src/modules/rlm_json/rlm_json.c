@@ -533,9 +533,9 @@ static int mod_bootstrap(void *instance, CONF_SECTION *conf)
 	/*
 	 *	Check the output format type
 	 */
-	format->output_format = fr_table_value_by_str(fr_json_format_table, format->output_format_str, JSON_FORMAT_UNSET);
-	if (format->output_format == JSON_FORMAT_UNSET) {
-		cf_log_err(conf, "output_format value \"%s\" is invalid", format->output_format_str);
+	format->output_mode = fr_table_value_by_str(fr_json_format_table, format->output_mode_str, JSON_MODE_UNSET);
+	if (format->output_mode == JSON_MODE_UNSET) {
+		cf_log_err(conf, "output_mode value \"%s\" is invalid", format->output_mode_str);
 		return -1;
 	}
 

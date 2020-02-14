@@ -46,13 +46,13 @@ extern fr_table_num_sorted_t const fr_json_format_table[];
 extern size_t fr_json_format_table_len;
 
 typedef enum {
-	JSON_FORMAT_UNSET = 0,
-	JSON_FORMAT_OBJECT,
-	JSON_FORMAT_OBJECT_SIMPLE,
-	JSON_FORMAT_ARRAY,
-	JSON_FORMAT_ARRAY_OF_VALUES,
-	JSON_FORMAT_ARRAY_OF_NAMES
-} json_format_type_t;
+	JSON_MODE_UNSET = 0,
+	JSON_MODE_OBJECT,
+	JSON_MODE_OBJECT_SIMPLE,
+	JSON_MODE_ARRAY,
+	JSON_MODE_ARRAY_OF_VALUES,
+	JSON_MODE_ARRAY_OF_NAMES
+} json_mode_type_t;
 
 
 /** Formatting options for fr_json_afrom_pair_list()
@@ -189,8 +189,8 @@ typedef struct {
 
 
 struct fr_json_format_s {
-	char const		*output_format_str;
-	json_format_type_t	output_format;
+	char const		*output_mode_str;
+	json_mode_type_t	output_mode;
 
 	fr_json_format_attr_t	attr;
 	fr_json_format_value_t	value;

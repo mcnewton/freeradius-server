@@ -38,11 +38,11 @@ static json_object	*json_array_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps
 						    fr_json_format_t const *format);
 
 fr_table_num_sorted_t const fr_json_format_table[] = {
-	{ "array",		JSON_FORMAT_ARRAY		},
-	{ "array_of_names",	JSON_FORMAT_ARRAY_OF_NAMES	},
-	{ "array_of_values",	JSON_FORMAT_ARRAY_OF_VALUES	},
-	{ "object",		JSON_FORMAT_OBJECT		},
-	{ "object_simple",	JSON_FORMAT_OBJECT_SIMPLE	},
+	{ "array",		JSON_MODE_ARRAY		},
+	{ "array_of_names",	JSON_MODE_ARRAY_OF_NAMES	},
+	{ "array_of_values",	JSON_MODE_ARRAY_OF_VALUES	},
+	{ "object",		JSON_MODE_OBJECT		},
+	{ "object_simple",	JSON_MODE_OBJECT_SIMPLE	},
 };
 size_t fr_json_format_table_len = NUM_ELEMENTS(fr_json_format_table);
 
@@ -70,7 +70,7 @@ CONF_PARSER const fr_json_format_config[] = {
 	{ FR_CONF_OFFSET("value", FR_TYPE_SUBSECTION, fr_json_format_t, value),
 		.subcs = (void const *) json_format_value_config },
 
-	{ FR_CONF_OFFSET("output_format", FR_TYPE_STRING, fr_json_format_t, output_format_str), .dflt = "object" },
+	{ FR_CONF_OFFSET("output_mode", FR_TYPE_STRING, fr_json_format_t, output_mode_str), .dflt = "object" },
 	{ FR_CONF_OFFSET("output_as_array", FR_TYPE_BOOL, fr_json_format_t, format_array), .dflt = "no" },
 	{ FR_CONF_OFFSET("simple", FR_TYPE_BOOL, fr_json_format_t, simple), .dflt = "no" },
 	{ FR_CONF_OFFSET("include_attribute_type", FR_TYPE_BOOL, fr_json_format_t, include_type), .dflt = "yes" },
@@ -475,7 +475,7 @@ static json_object *json_object_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vp
 
 	/* Check format and type */
 	rad_assert(format);
-	rad_assert(format->output_format == JSON_FORMAT_OBJECT);
+	rad_assert(format->output_mode == JSON_MODE_OBJECT);
 
 	MEM(obj = json_object_new_object());
 
@@ -583,7 +583,7 @@ static json_object *json_smplobj_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **v
 
 	/* Check format and type */
 	rad_assert(format);
-	rad_assert(format->output_format == JSON_FORMAT_OBJECT_SIMPLE);
+	rad_assert(format->output_mode == JSON_MODE_OBJECT_SIMPLE);
 
 	MEM(obj = json_object_new_object());
 
@@ -845,7 +845,7 @@ static struct json_object *json_array_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAI
 
 	/* Check format and type */
 	rad_assert(format);
-	rad_assert(format->output_format == JSON_FORMAT_ARRAY);
+	rad_assert(format->output_mode == JSON_MODE_ARRAY);
 
 	MEM(obj = json_object_new_array());
 
@@ -983,7 +983,7 @@ static struct json_object *json_value_array_afrom_pair_list(TALLOC_CTX *ctx, VAL
 
 	/* Check format and type */
 	rad_assert(format);
-	rad_assert(format->output_format == JSON_FORMAT_ARRAY_OF_VALUES);
+	rad_assert(format->output_mode == JSON_MODE_ARRAY_OF_VALUES);
 
 	MEM(obj = json_object_new_array());
 
@@ -1039,7 +1039,7 @@ static struct json_object *json_attr_array_afrom_pair_list(UNUSED TALLOC_CTX *ct
 
 	/* Check format and type */
 	rad_assert(format);
-	rad_assert(format->output_format == JSON_FORMAT_ARRAY_OF_NAMES);
+	rad_assert(format->output_mode == JSON_MODE_ARRAY_OF_NAMES);
 
 	MEM(obj = json_object_new_array());
 
@@ -1274,20 +1274,20 @@ char *fr_json_afrom_pair_list(TALLOC_CTX *ctx, VALUE_PAIR **vps,
 	 *	If format_array is set then the top level is an
 	 *	array, otherwise it's an object.
 	 */
-	switch (format->output_format) {
-	case JSON_FORMAT_OBJECT:
+	switch (format->output_mode) {
+	case JSON_MODE_OBJECT:
 		MEM(obj = json_object_afrom_pair_list(ctx, vps, format));
 		break;
-	case JSON_FORMAT_OBJECT_SIMPLE:
+	case JSON_MODE_OBJECT_SIMPLE:
 		MEM(obj = json_smplobj_afrom_pair_list(ctx, vps, format));
 		break;
-	case JSON_FORMAT_ARRAY:
+	case JSON_MODE_ARRAY:
 		MEM(obj = json_array_afrom_pair_list(ctx, vps, format));
 		break;
-	case JSON_FORMAT_ARRAY_OF_VALUES:
+	case JSON_MODE_ARRAY_OF_VALUES:
 		MEM(obj = json_value_array_afrom_pair_list(ctx, vps, format));
 		break;
-	case JSON_FORMAT_ARRAY_OF_NAMES:
+	case JSON_MODE_ARRAY_OF_NAMES:
 		MEM(obj = json_attr_array_afrom_pair_list(ctx, vps, format));
 		break;
 	default:
