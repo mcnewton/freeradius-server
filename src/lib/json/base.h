@@ -42,6 +42,19 @@ RCSIDH(json_h, "$Id$")
 
 #  include <freeradius-devel/server/base.h>
 
+extern fr_table_num_sorted_t const fr_json_format_table[];
+extern size_t fr_json_format_table_len;
+
+typedef enum {
+	JSON_FORMAT_UNSET = 0,
+	JSON_FORMAT_OBJECT,
+	JSON_FORMAT_OBJECT_SIMPLE,
+	JSON_FORMAT_ARRAY,
+	JSON_FORMAT_ARRAY_OF_VALUES,
+	JSON_FORMAT_ARRAY_OF_NAMES
+} json_format_type_t;
+
+
 /** Formatting options for fr_json_afrom_pair_list()
  *
  * These options control the format of JSON document which is
@@ -177,6 +190,7 @@ typedef struct {
 
 struct fr_json_format_s {
 	char const		*output_format_str;
+	json_format_type_t	output_format;
 
 	fr_json_format_attr_t	attr;
 	fr_json_format_value_t	value;

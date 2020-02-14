@@ -516,6 +516,7 @@ static int mod_bootstrap(void *instance, CONF_SECTION *conf)
 	rlm_json_t		*inst = talloc_get_type_abort(instance, rlm_json_t);
 	xlat_t const		*xlat;
 	char 			*name;
+	fr_json_format_t	*format = inst->format;
 
 	inst->name = cf_section_name2(conf);
 	if (!inst->name) inst->name = cf_section_name1(conf);
@@ -528,6 +529,15 @@ static int mod_bootstrap(void *instance, CONF_SECTION *conf)
 	xlat_async_instantiate_set(xlat, json_xlat_instantiate,
 				   rlm_json_t *, NULL, inst);
 	talloc_free(name);
+
+	/*
+	 *	Check the output format type
+	 */
+	format->output_format = fr_table_value_by_str(fr_json_format_table, format->output_format_str, JSON_FORMAT_UNSET);
+	if (format->output_format == JSON_FORMAT_UNSET) {
+		cf_log_err(conf, "output_format value \"%s\" is invalid", format->output_format_str);
+		return -1;
+	}
 
 	if (map_proc_register(instance, "json", mod_map_proc,
 			      mod_map_proc_instantiate, sizeof(rlm_json_jpath_cache_t)) < 0) return -1;
