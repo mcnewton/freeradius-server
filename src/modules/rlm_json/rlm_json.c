@@ -223,13 +223,14 @@ static xlat_action_t json_encode_xlat(TALLOC_CTX *ctx, fr_cursor_t *out, REQUEST
 			     vp;
 			     vp = fr_cursor_next(&filter)) {
 
-				for (VALUE_PAIR *vpm = fr_cursor_init(&cursor, &json_vps);
-				     vpm;
-				     vpm = fr_cursor_next(&cursor)) {
+				VALUE_PAIR *vpm = fr_cursor_init(&cursor, &json_vps);
+				while (vpm) {
 					if (vp->da == vpm->da) {
-						vpm = fr_cursor_remove(&cursor);
-						talloc_free(vpm);
+						talloc_free(fr_cursor_remove(&cursor));
+						vpm = fr_cursor_current(&cursor);
+						continue;
 					}
+					vpm = fr_cursor_next(&cursor);
 				}
 			}
 
