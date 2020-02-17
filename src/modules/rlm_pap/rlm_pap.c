@@ -123,6 +123,64 @@ static rlm_rcode_t CC_HINT(nonnull) mod_authorize(void *instance, UNUSED void *t
 {
 	rlm_pap_t const 	*inst = instance;
 	VALUE_PAIR		*password;
+	fr_cursor_t		cursor;
+
+printf("BEFORE:\n");
+
+	for (VALUE_PAIR *vp = fr_cursor_init(&cursor, &request->packet->vps);
+	     vp;
+	     vp = fr_cursor_next(&cursor)) {
+		printf("VP: ");
+		fr_pair_fprint(stdout, vp);
+	}
+
+printf("DELETE:\n");
+
+	for (VALUE_PAIR *vp = fr_cursor_init(&cursor, &request->packet->vps);
+	     vp;
+	     vp = fr_cursor_next(&cursor)) {
+//	     vp = fr_cursor_current(&cursor)) {
+		VALUE_PAIR *dvp;
+
+		printf("VP: '%c'", vp->data.vb_strvalue[0]);
+
+		switch (vp->data.vb_strvalue[0]) {
+		case '3':
+		case '4':
+		case '6':
+			printf(" [DEL]\n");
+			dvp = fr_cursor_remove(&cursor);
+			break;
+		default:
+			fr_pair_fprint(stdout, vp);
+//			vp = fr_cursor_next(&cursor);
+		}
+	}
+
+printf("AFTER:\n");
+
+	for (VALUE_PAIR *vp = fr_cursor_init(&cursor, &request->packet->vps);
+	     vp;
+	     vp = fr_cursor_next(&cursor)) {
+		printf("VP: ");
+		fr_pair_fprint(stdout, vp);
+	}
+
+
+#if 0
+/*
+ VALUE_PAIR *vpm = fr_cursor_init(&cursor, &json_vps);
+                                while (vpm) {
+                                        if (vp->da == vpm->da) {
+                                                talloc_free(fr_cursor_remove(&cursor));
+                                                vpm = fr_cursor_current(&cursor);
+                                                continue;
+                                        }
+                                        vpm = fr_cursor_next(&cursor);
+                                }
+*/
+#endif
+
 
 	if (fr_pair_find_by_da(request->control, attr_auth_type, TAG_ANY) != NULL) {
 		RDEBUG3("Auth-Type is already set.  Not setting 'Auth-Type := %s'", inst->name);

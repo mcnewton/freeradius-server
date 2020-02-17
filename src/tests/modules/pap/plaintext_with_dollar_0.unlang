@@ -1,12 +1,30 @@
-if (&User-Name == 'plaintext_with_dollar_0') {
-	update control {
-		&Cleartext-Password := 'password$'
-	}
-	pap.authorize
-	pap.authenticate
-	if (!ok) {
-		test_fail
-	} else {
-		test_pass
-	}
+#if (&User-Name == 'plaintext_with_dollar_0') {
+#	update control {
+#		&Cleartext-Password := 'password$'
+#	}
+#	pap.authorize
+#	pap.authenticate
+#	if (!ok) {
+#		test_fail
+#	} else {
+#		test_pass
+#	}
+#}
+#
+
+update request {
+	&User-Name !* ANY
+	&User-Password !* ANY
+	&Filter-Id = "1"
+	&Filter-Id += "2"
+	&Filter-Id += "3"
+	&Filter-Id += "4"
+	&Filter-Id += "5"
+	&Filter-Id += "6"
+	&Filter-Id += "7"
+	&Filter-Id += "8"
 }
+
+pap
+
+test_fail
