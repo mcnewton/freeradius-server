@@ -990,7 +990,7 @@ do { \
 				}
 			}
 		}
-		if (names != NULL) sk_GENERAL_NAME_free(names);
+		if (names != NULL) GENERAL_NAMES_free(names);
 	}
 
 	/*
