@@ -1187,8 +1187,10 @@ int map_to_request(REQUEST *request, vp_map_t const *map, radius_map_getvalue_t 
 				*list = head;
 				head = NULL;
 			} else {
+				/* FALL-THROUGH */
 		case T_OP_EQ:
 				rad_assert(map->rhs->type == TMPL_TYPE_EXEC);
+				/* FALL-THROUGH */
 		case T_OP_ADD:
 				fr_pair_list_move(parent, list, &head);
 				fr_pair_list_free(&head);

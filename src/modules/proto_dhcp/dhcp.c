@@ -841,6 +841,7 @@ static ssize_t decode_value_internal(TALLOC_CTX *ctx, vp_cursor_t *cursor, fr_di
 	raw:
 		FR_PROTO_TRACE("decoding as unknown type");
 		if (fr_pair_to_unknown(vp) < 0) return -1;
+		/* FALL-THROUGH */
 
 	case PW_TYPE_OCTETS:
 		if (data_len > UINT8_MAX) return -1;

@@ -1399,6 +1399,7 @@ static inline int fr_item_validate_ipaddr(CONF_SECTION *cs, char const *name, PW
 		default:
 			return -1;
 		}
+		/* FALL-THROUGH */
 	default:
 		return 0;
 	}
