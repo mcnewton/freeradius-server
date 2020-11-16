@@ -956,13 +956,13 @@ do { \
 #ifdef GEN_EMAIL
 				case GEN_EMAIL:
 					ADD_CERT_ATTR(cert_attr_names[FR_TLS_SAN_EMAIL][attr_index],
-						      (char *)ASN1_STRING_data(name->d.rfc822Name));
+						      (const char *)ASN1_STRING_get0_data(name->d.rfc822Name));
 					break;
 #endif	/* GEN_EMAIL */
 #ifdef GEN_DNS
 				case GEN_DNS:
 					ADD_CERT_ATTR(cert_attr_names[FR_TLS_SAN_DNS][attr_index],
-						      (char *)ASN1_STRING_data(name->d.dNSName));
+						      (const char *)ASN1_STRING_get0_data(name->d.dNSName));
 					break;
 #endif	/* GEN_DNS */
 #ifdef GEN_OTHERNAME
