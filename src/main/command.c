@@ -1140,7 +1140,7 @@ static int command_show_clients(rad_listen_t *listener, UNUSED int argc, UNUSED 
 	int i;
 	RADCLIENT *client;
 	char buffer[256];
-	char ipaddr[256];
+	char ipaddr[512];
 
 	for (i = 0; i < 256; i++) {
 		client = client_findbynumber(NULL, i);
