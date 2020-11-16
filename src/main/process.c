@@ -4797,7 +4797,8 @@ static int event_new_fd(rad_listen_t *this)
 			this->when.tv_sec += 30;
 
 			ASSERT_MASTER;
-			INSERT_EVENT((fr_event_callback_t) event_new_fd, this);
+			INSERT_EVENT((void *) event_new_fd, this);
+
 			return 1;
 		}
 
@@ -4846,7 +4847,7 @@ static int event_new_fd(rad_listen_t *this)
 			this->when.tv_sec += 30;
 
 			ASSERT_MASTER;
-			INSERT_EVENT((fr_event_callback_t) event_new_fd, this);
+			INSERT_EVENT((void *) event_new_fd, this);
 			return 1;
 		}
 
