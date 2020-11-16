@@ -210,6 +210,7 @@ void eap_tls_gen_challenge(SSL *s, uint8_t *buffer, uint8_t *scratch, size_t siz
 #if OPENSSL_VERSION_NUMBER >= 0x10001000L
 	SSL_export_keying_material(s, buffer, size, prf_label,
 				   strlen(prf_label), NULL, 0, 0);
+	scratch = scratch; /* quiet compiler */
 
 #else
 	uint8_t seed[128 + 2*SSL3_RANDOM_SIZE];
