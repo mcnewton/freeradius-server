@@ -369,7 +369,9 @@ int tls_global_init(void)
 	ENGINE_register_all_complete();
 
 	tls_done_init = true;
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 	OPENSSL_config(NULL);
+#endif
 
 	return 0;
 }
