@@ -264,17 +264,18 @@ void fr_radius_print_hex(RADIUS_PACKET const *packet)
  * We put them into MD5 in the reverse order from that used when
  * encrypting passwords to RADIUS.
  */
-void fr_radius_make_secret(uint8_t *digest, uint8_t const *vector, char const *secret, uint8_t const *value)
+void fr_radius_make_secret(uint8_t *digest, uint8_t const *vector, char const *secret,
+			   uint8_t const *value, size_t length)
 {
 	FR_MD5_CTX context;
-	int	     i;
+	size_t	     i;
 
 	fr_md5_init(&context);
 	fr_md5_update(&context, vector, AUTH_VECTOR_LEN);
 	fr_md5_update(&context, (uint8_t const *) secret, talloc_array_length(secret) - 1);
 	fr_md5_final(digest, &context);
 
-	for (i = 0; i < AUTH_VECTOR_LEN; i++ ) digest[i] ^= value[i];
+	for (i = 0; i < length; i++ ) digest[i] ^= value[i];
 }
 
 /** Basic validation of RADIUS packet header

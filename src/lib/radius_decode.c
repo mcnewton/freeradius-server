@@ -1037,7 +1037,12 @@ ssize_t fr_radius_decode_pair_value(TALLOC_CTX *ctx, vp_cursor_t *cursor, fr_dic
 			if (!this->original) goto raw;
 			else {
 				uint8_t my_digest[AUTH_VECTOR_LEN];
-				fr_radius_make_secret(my_digest, this->original->vector, this->secret, p);
+				size_t secret_len;
+
+				secret_len = datalen;
+				if (secret_len > AUTH_VECTOR_LEN) secret_len = AUTH_VECTOR_LEN;
+
+				fr_radius_make_secret(my_digest, this->original->vector, this->secret, p, secret_len);
 				memcpy(buffer, my_digest, AUTH_VECTOR_LEN );
 				buffer[AUTH_VECTOR_LEN] = '\0';
 				datalen = strlen((char *) buffer);
