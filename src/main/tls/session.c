@@ -855,7 +855,11 @@ int tls_session_pairs_from_x509_cert(vp_cursor_t *cursor, TALLOC_CTX *ctx,
 
 	int		attr_index, loc;
 
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L && !defined(LIBRESSL_VERSION_NUMBER)
+	const STACK_OF(X509_EXTENSION) *ext_list = NULL;
+#else
 	STACK_OF(X509_EXTENSION) *ext_list = NULL;
+#endif
 
 	ASN1_INTEGER	*sn = NULL;
 	ASN1_TIME	*asn_time = NULL;
