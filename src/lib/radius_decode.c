@@ -326,15 +326,22 @@ static ssize_t decode_concat(TALLOC_CTX *ctx, vp_cursor_t *cursor,
 	 *	don't care about walking off of the end of it.
 	 */
 	while (ptr < end) {
+		if (ptr[1] < 2) return -1;
+		if ((ptr + ptr[1]) > end) return -1;
+
 		total += ptr[1] - 2;
 
 		ptr += ptr[1];
+
+		if (ptr == end) break;
 
 		/*
 		 *	Attributes MUST be consecutive.
 		 */
 		if (ptr[0] != attr) break;
 	}
+
+	end = ptr;
 
 	/*
 	 *	If there's no data, just return that we skipped the
@@ -354,13 +361,14 @@ static ssize_t decode_concat(TALLOC_CTX *ctx, vp_cursor_t *cursor,
 
 	total = 0;
 	ptr = data;
-	while (total < vp->vp_length) {
+	while (ptr < end) {
 		memcpy(p, ptr + 2, ptr[1] - 2);
 		p += ptr[1] - 2;
 		total += ptr[1] - 2;
 		ptr += ptr[1];
 	}
 	fr_cursor_append(cursor, vp);
+
 	return ptr - data;
 }
 
