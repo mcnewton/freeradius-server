@@ -51,11 +51,13 @@ static CONF_PARSER pwd_module_config[] = {
 	CONF_PARSER_TERMINATOR
 };
 
-static int mod_detach (void *arg)
+static int mod_detach (UNUSED void *arg)
 {
+/*
 	eap_pwd_t *inst;
 
 	inst = (eap_pwd_t *) arg;
+*/
 
 	return 0;
 }
