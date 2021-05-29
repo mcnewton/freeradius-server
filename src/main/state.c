@@ -665,7 +665,7 @@ bool fr_state_put_vps(REQUEST *request, RADIUS_PACKET *original, RADIUS_PACKET *
 {
 	state_entry_t *entry, *old;
 	fr_state_t *state = &global_state;
-	fr_cleanup_list_t *request_list;
+	fr_cleanup_list_t *request_list = NULL;
 
 	if (!request->state) {
 		size_t i;
@@ -700,7 +700,9 @@ bool fr_state_put_vps(REQUEST *request, RADIUS_PACKET *original, RADIUS_PACKET *
 
 	PTHREAD_MUTEX_LOCK(&state->mutex);
 
-	request_list = fr_state_cleanup_find(request, state);
+	if (request->root->postauth_client_lost) {
+		request_list = fr_state_cleanup_find(request, state);
+	}
 
 	if (original) {
 		old = fr_state_find(state, request->server, original);
