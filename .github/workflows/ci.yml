@@ -17,6 +17,9 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
+    container:
+      image: ubuntu:18.04
+
     strategy:
       fail-fast: false
       matrix:
@@ -41,15 +44,37 @@ jobs:
     # must also amend the branch protection fules.
     name: "v3.0.x-${{ matrix.env.NAME }}"
 
+    services:
+      mariadb:
+        image: mariadb
+        env:
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: yes
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 10
+
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+
     steps:
+
+    - name: Self-hosted runner container fixes
+      run: |
+        ln -fs /usr/bin/env /usr/local/bin/sudo
 
     - uses: actions/checkout@v2
 
-    - name: Package manager performance improvements
-      run: |
-        sudo sh -c 'echo force-unsafe-io > /etc/dpkg/dpkg.cfg.d/02speedup'
-        echo 'man-db man-db/auto-update boolean false' | sudo debconf-set-selections
-        sudo dpkg-reconfigure man-db
+#    - name: Package manager performance improvements
+#      run: |
+#        sudo sh -c 'echo force-unsafe-io > /etc/dpkg/dpkg.cfg.d/02speedup'
+#        echo 'man-db man-db/auto-update boolean false' | sudo debconf-set-selections
+#        sudo dpkg-reconfigure man-db
 
     - name: Freshen APT repo metadata
       run: |
@@ -66,6 +91,9 @@ jobs:
         fakeroot \
         firebird-dev \
         freetds-dev \
+        gawk \
+        git \
+        gnupg \
         libcap-dev \
         libcollectdclient-dev \
         libcurl4-openssl-dev \
@@ -90,6 +118,7 @@ jobs:
         libreadline-dev \
         libruby \
         libsnmp-dev \
+        libsqlite3-dev \
         libssl-dev \
         libtalloc-dev \
         libunbound-dev \
@@ -101,6 +130,8 @@ jobs:
         python-dev \
         python3-dev \
         ruby-dev \
+        snmp \
+        software-properties-common \
         quilt
 
     - name: Install LLVM 10 for 18.04
@@ -247,6 +278,12 @@ jobs:
         SQL_POSTGRESQL_TEST_SERVER: 127.0.0.1
         LDAP_TEST_SERVER: 127.0.0.1
         LDAP_TEST_SERVER_PORT: 3890
+
+    - name: Show debug logs on failure
+      if: ${{ failure() }}
+      run: |
+        cat src/tests/radius.log || :
+
     #
     #  If the CI has failed and the branch is ci-debug then start a tmate
     #  session. SSH rendezvous point is emited continuously in the job output.
@@ -255,7 +292,8 @@ jobs:
       uses: mxschmitt/action-tmate@v3
       with:
         limit-access-to-actor: true
-      if: ${{ github.ref == 'refs/heads/ci-debug' && failure() }}
+      #if: ${{ github.ref == 'refs/heads/ci-debug' && failure() }}
+      if: ${{ failure() }}
 
 ##########################################################################################
 #                            FREERADIUS CORE DEVELOPERS ONLY
