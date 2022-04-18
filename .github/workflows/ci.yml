@@ -246,20 +246,23 @@ jobs:
         sudo sh -c 'echo "#!/bin/sh"          >  /usr/bin/ucf'
         sudo sh -c 'echo "shift && cp -v \$@" >> /usr/bin/ucf'
         sudo chmod +x /usr/bin/ucf
+
         sudo apt-get install -y --no-install-recommends \
           apparmor-utils \
-          slapd ldap-utils
+          slapd ldap-utils \
+          mariadb-client postgresql-client
         sudo mv -f /usr/bin/ucf.disabled /usr/bin/ucf
-        sudo systemctl stop slapd
-        sudo aa-complain /usr/sbin/slapd
+        #sudo systemctl stop slapd
+        #sudo aa-complain /usr/sbin/slapd
+        /usr/sbin/slapd
 
-        export PG_VER=14
-        sudo sh -c "echo host  all all 127.0.0.1/32 trust >  /etc/postgresql/$PG_VER/main/pg_hba.conf"
-        sudo sh -c "echo local all all              trust >> /etc/postgresql/$PG_VER/main/pg_hba.conf"
+        #export PG_VER=14
+        #sudo sh -c "echo host  all all 127.0.0.1/32 trust >  /etc/postgresql/$PG_VER/main/pg_hba.conf"
+        #sudo sh -c "echo local all all              trust >> /etc/postgresql/$PG_VER/main/pg_hba.conf"
 
-        sudo systemctl start mysql postgresql
+        #sudo systemctl start mysql postgresql
 
-        mysql -h 127.0.0.1 -uroot -proot -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '';"
+        #mysql -h 127.0.0.1 -uroot -proot -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '';"
 
         for i in \
             postgresql-setup.sh \
@@ -275,8 +278,10 @@ jobs:
         make ci-test
 
       env:
-        SQL_MYSQL_TEST_SERVER: 127.0.0.1
-        SQL_POSTGRESQL_TEST_SERVER: 127.0.0.1
+        SQL_MYSQL_TEST_SERVER: mariadb
+        SQL_POSTGRESQL_TEST_SERVER: postgres
+        #SQL_MYSQL_TEST_SERVER: 127.0.0.1
+        #SQL_POSTGRESQL_TEST_SERVER: 127.0.0.1
         LDAP_TEST_SERVER: 127.0.0.1
         LDAP_TEST_SERVER_PORT: 3890
 
