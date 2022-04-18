@@ -220,7 +220,7 @@ jobs:
           export PATH=/opt/openssl/bin:$PATH
           CONFIG_OPENSSL="--with-openssl-lib-dir=/opt/openssl/lib64 --with-openssl-include-dir=/opt/openssl/include"
         fi
-        CFLAGS="${BUILD_CFLAGS}" ./configure -C --enable-werror --prefix=$HOME/freeradius --with-threads=$LIBS_OPTIONAL --with-udpfromto=$LIBS_OPTIONAL --with-openssl=$LIBS_OPTIONAL --with-pcre=$LIBS_OPTIONAL --enable-reproducible-builds=${REPRODUCIBLE} $CONFIG_OPENSSL
+        CFLAGS="${BUILD_CFLAGS}" ./configure -C --enable-developer --enable-werror --prefix=$HOME/freeradius --with-threads=$LIBS_OPTIONAL --with-udpfromto=$LIBS_OPTIONAL --with-openssl=$LIBS_OPTIONAL --with-pcre=$LIBS_OPTIONAL --enable-reproducible-builds=${REPRODUCIBLE} $CONFIG_OPENSSL
         make -j `nproc`
 
     - name: clang scan
