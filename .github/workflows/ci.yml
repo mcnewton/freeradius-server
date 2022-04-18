@@ -275,6 +275,8 @@ jobs:
             $script
         done
 
+        mysql -h mariadb -uroot  -e "CREATE USER 'radius'@'%' IDENTIFIED BY 'radpass';"
+        mysql -u root -h mariadb -e "GRANT ALL ON radius.* TO 'radius'; FLUSH PRIVILEGES;"
         make ci-test
 
       env:
