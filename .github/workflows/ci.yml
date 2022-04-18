@@ -11,6 +11,7 @@ env:
   ALT_OPENSSL: "3.0.2"
   CI: 1
   GH_ACTIONS: 1
+  DEBIAN_FRONTEND: noninteractive
 
 jobs:
   ci:
