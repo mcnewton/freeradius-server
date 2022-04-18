@@ -16,7 +16,8 @@ env:
 jobs:
   ci:
 
-    runs-on: ${{ matrix.os }}
+    # runs-on: ${{ matrix.os }}
+    runs-on: self-hosted
 
     container:
       image: ubuntu:18.04
