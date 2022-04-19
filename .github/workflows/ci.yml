@@ -77,7 +77,7 @@ jobs:
       run: |
         ln -fs /usr/bin/env /usr/local/bin/sudo
 
-    - uses: actions/checkout@v2
+#    - uses: actions/checkout@v2
 
 #    - name: Package manager performance improvements
 #      run: |
@@ -211,6 +211,8 @@ jobs:
         krb5-config --all || :
         [ -d /opt/openssl ] && export PATH=/opt/openssl/bin:$PATH
         openssl version
+
+    - uses: actions/checkout@v2
 
     - name: Build eapol_test
       run: |
