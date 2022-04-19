@@ -287,9 +287,6 @@ jobs:
             $script
         done
 
-#    - name: Test - configure database access (self-hosted runner)
-#      if: ${{ env.USE_DOCKER == 1 }}
-#      run: |
         mysql -h mariadb -uroot  -e "CREATE USER 'radius'@'%' IDENTIFIED BY 'radpass';"
         mysql -u root -h mariadb -e "GRANT ALL ON radius.* TO 'radius'; FLUSH PRIVILEGES;"
 
