@@ -274,6 +274,8 @@ jobs:
 
         #mysql -h 127.0.0.1 -uroot -proot -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '';"
 
+    - name: Test - setup databases
+      run: |
         for i in \
             postgresql-setup.sh \
             mysql-setup.sh \
@@ -285,8 +287,14 @@ jobs:
             $script
         done
 
+    - name: Test - configure database access (self-hosted runner)
+#      if: ${{ env.USE_DOCKER == 1 }}
+      run: |
         mysql -h mariadb -uroot  -e "CREATE USER 'radius'@'%' IDENTIFIED BY 'radpass';"
         mysql -u root -h mariadb -e "GRANT ALL ON radius.* TO 'radius'; FLUSH PRIVILEGES;"
+
+    - name: Test - run tests
+      run: |
         make ci-test
 
     - name: Show debug logs on failure
