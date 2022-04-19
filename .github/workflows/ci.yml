@@ -287,11 +287,11 @@ jobs:
             $script
         done
 
+    - name: Test - run tests
+      run: |
         mysql -h mariadb -uroot  -e "CREATE USER 'radius'@'%' IDENTIFIED BY 'radpass';"
         mysql -u root -h mariadb -e "GRANT ALL ON radius.* TO 'radius'; FLUSH PRIVILEGES;"
 
-    - name: Test - run tests
-      run: |
         make ci-test
 
     - name: Show debug logs on failure
