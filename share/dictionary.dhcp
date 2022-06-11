@@ -73,6 +73,8 @@ ATTRIBUTE	DHCP-Group-Name				275	string
 ATTRIBUTE	DHCP-SQL-Option-Identifier		276	string
 ATTRIBUTE	DHCP-SQL-Option-Context			277	string
 
+ATTRIBUTE	DHCP-Relay-To-Port			278	integer
+
 VALUE	DHCP-Flags			Broadcast		0x8000
 
 VALUE	DHCP-Hardware-Type		Ethernet		1

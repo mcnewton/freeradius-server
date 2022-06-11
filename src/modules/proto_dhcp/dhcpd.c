@@ -76,7 +76,7 @@ static int dhcprelay_process_client_request(REQUEST *request)
 {
 	int rcode;
 	uint8_t maxhops = 16;
-	VALUE_PAIR *vp, *giaddr;
+	VALUE_PAIR *vp, *vp_port, *giaddr;
 	dhcp_socket_t *sock;
 	RADIUS_PACKET *packet;
 
@@ -146,7 +146,13 @@ static int dhcprelay_process_client_request(REQUEST *request)
 	/* set DEST ipaddr/port to the next server ipaddr/port */
 	packet->dst_ipaddr.af = AF_INET;
 	packet->dst_ipaddr.ipaddr.ip4addr.s_addr = vp->vp_ipaddr;
-	packet->dst_port = sock->lsock.my_port;
+
+	vp_port = fr_pair_find_by_num(request->config, 278, DHCP_MAGIC_VENDOR, TAG_ANY); /* DHCP-Relay-To-Port */
+	if (vp_port) {
+		packet->dst_port = vp_port->vp_integer;
+	} else {
+		packet->dst_port = sock->lsock.my_port;
+	}
 
 	packet->vps = request->packet->vps; /* hackity hack */
 
