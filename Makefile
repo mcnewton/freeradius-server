@@ -364,6 +364,14 @@ endif
 DEBBUILDEXTRA = --jobs=auto
 .PHONY: deb
 deb:
+	pwd
+	echo a1
+	ls -l
+	echo a2
+	which fakeroot || true
+	echo a3
+	ls -la debian/rules
+	echo a4
 	fakeroot debian/rules debian/control #clean
 	fakeroot dpkg-buildpackage $(DEBBUILDEXTRA) -b -uc
 
