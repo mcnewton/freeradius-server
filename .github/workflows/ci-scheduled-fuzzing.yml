@@ -254,7 +254,7 @@ jobs:
       env:
         GITHUB_REF: "${{ github.ref }}"
         START_TIMESTAMP: "${{ needs.set-matrix.outputs.starttimestamp }}"
-      if: ${{ !startsWith(github.ref, 'refs/heads/debug-fuzzer-') }}
+#      if: ${{ !startsWith(github.ref, 'refs/heads/debug-fuzzer-') }}
 
     - name: "Clang libFuzzer: Store assets on failure"
       uses: actions/upload-artifact@v6
