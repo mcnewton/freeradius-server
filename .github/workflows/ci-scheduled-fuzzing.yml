@@ -138,7 +138,7 @@ jobs:
     needs:
       - set-matrix
 
-    if: github.repository_owner == 'FreeRADIUS'
+#    if: github.repository_owner == 'FreeRADIUS'
 
     runs-on: self-hosted
 
