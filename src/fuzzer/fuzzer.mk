@@ -95,6 +95,7 @@ $(TEST_BIN_DIR)/fuzzer_$(PROTOCOL): $(BUILD_DIR)/lib/local/libfreeradius-$(PROTO
 #  increase the size of the corpus by several times.
 #
 fuzzer.$(PROTOCOL): $(TEST_BIN_DIR)/fuzzer_$(PROTOCOL) | src/tests/fuzzer-corpus/$(PROTOCOL)
+	@echo AAAAAAAAAAAAAAAAAAAAA 1
 	${Q}$(TEST_BIN_NO_TIMEOUT)/fuzzer_$(PROTOCOL) \
 		-artifact_prefix="$(FUZZER_ARTIFACTS)/$(PROTOCOL)/" \
 		-max_len=512 $(FUZZER_ARGUMENTS) \
@@ -106,6 +107,8 @@ fuzzer.$(PROTOCOL): $(TEST_BIN_DIR)/fuzzer_$(PROTOCOL) | src/tests/fuzzer-corpus
 #
 ifeq "$(CI)" ""
 test.fuzzer.$(PROTOCOL): $(TEST_BIN_DIR)/fuzzer_$(PROTOCOL) | src/tests/fuzzer-corpus/$(PROTOCOL)
+	@echo AAAAAAAAAAAAAAAAAAAAA 2
+	@echo $(TEST_BIN_NO_TIMEOUT)/fuzzer_$(PROTOCOL)
 	@echo TEST-FUZZER $(PROTOCOL) for $(FUZZER_TIMEOUT)s
 	${Q}$(TEST_BIN_NO_TIMEOUT)/fuzzer_$(PROTOCOL) \
 		-artifact_prefix="$(FUZZER_ARTIFACTS)/$(PROTOCOL)/" \
@@ -115,6 +118,8 @@ test.fuzzer.$(PROTOCOL): $(TEST_BIN_DIR)/fuzzer_$(PROTOCOL) | src/tests/fuzzer-c
 		src/tests/fuzzer-corpus/$(PROTOCOL)
 else
 test.fuzzer.$(PROTOCOL): $(TEST_BIN_DIR)/fuzzer_$(PROTOCOL) | src/tests/fuzzer-corpus/$(PROTOCOL)
+	@echo AAAAAAAAAAAAAAAAAAAAA 3
+	@echo $(TEST_BIN_NO_TIMEOUT)/fuzzer_$(PROTOCOL)
 	@echo TEST-FUZZER $(PROTOCOL) for $(FUZZER_TIMEOUT)s
 	@mkdir -p $(BUILD_DIR)/fuzzer
 	${Q}if ! $(TEST_BIN_NO_TIMEOUT)/fuzzer_$(PROTOCOL) \
@@ -130,6 +135,7 @@ test.fuzzer.$(PROTOCOL): $(TEST_BIN_DIR)/fuzzer_$(PROTOCOL) | src/tests/fuzzer-c
 endif
 
 test.fuzzer.$(PROTOCOL).merge: | src/tests/fuzzer-corpus/$(PROTOCOL)
+	@echo AAAAAAAAAAAAAAAAAAAAA 4
 	@echo MERGE-FUZZER-CORPUS $(PROTOCOL)
 	${Q}[ -e "$(FUZZER_CORPUS_DIR)/$(PROTOCOL)_new" ] || mkdir "$(FUZZER_CORPUS_DIR)/$(PROTOCOL)_new"
 	${Q}$(TEST_BIN_NO_TIMEOUT)/fuzzer_$(PROTOCOL) \
@@ -144,6 +150,7 @@ test.fuzzer.$(PROTOCOL).merge: | src/tests/fuzzer-corpus/$(PROTOCOL)
 	${Q}rm -rf "$(FUZZER_CORPUS_DIR)/$(PROTOCOL)_new"
 
 test.fuzzer.$(PROTOCOL).crash: $(wildcard $(BUILD_DIR)/fuzzer/$(PROTOCOL)/crash-*) $(wildcard $(BUILD_DIR)/fuzzer/$(PROTOCOL)/timeout-*) $(wildcard $(BUILD_DIR)/fuzzer/$(PROTOCOL)/slow-unit-*) $(TEST_BIN_DIR)/fuzzer_$(PROTOCOL) | src/tests/fuzzer-corpus/$(PROTOCOL)
+	@echo AAAAAAAAAAAAAAAAAAAAA 5
 	$(TEST_BIN_NO_TIMEOUT)/fuzzer_$(PROTOCOL) \
 		-artifact_prefix="$(FUZZER_ARTIFACTS)/$(PROTOCOL)/" \
 		-max_len=512 $(FUZZER_ARGUMENTS) \

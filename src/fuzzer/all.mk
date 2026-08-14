@@ -99,6 +99,7 @@ src/tests/fuzzer-corpus/${1}: ; @mkdir -p $$@
 
 ifeq "$$(CI)" ""
 test.fuzzer.${1}: $$(TEST_BIN_DIR)/fuzzer_${1} src/tests/fuzzer-corpus/${1} $$(FUZZER_ARTIFACTS)/${1}
+	@echo BBBBBBBBBBBBBBBBBBBBB 1
 	@echo TEST-FUZZER ${1} for $$(FUZZER_TIMEOUT)s
 	$${Q}$$(TEST_BIN_NO_TIMEOUT)/fuzzer_${1} \
 		-artifact_prefix="$$(FUZZER_ARTIFACTS)/${1}/" \
@@ -108,6 +109,7 @@ test.fuzzer.${1}: $$(TEST_BIN_DIR)/fuzzer_${1} src/tests/fuzzer-corpus/${1} $$(F
 		src/tests/fuzzer-corpus/${1}
 else
 test.fuzzer.${1}: $$(TEST_BIN_DIR)/fuzzer_${1} src/tests/fuzzer-corpus/${1} $$(FUZZER_ARTIFACTS)/${1}
+	@echo BBBBBBBBBBBBBBBBBBBBB 2
 	@echo TEST-FUZZER ${1} for $$(FUZZER_TIMEOUT)s
 	@mkdir -p $$(BUILD_DIR)/fuzzer
 	$${Q}if ! $$(TEST_BIN_NO_TIMEOUT)/fuzzer_${1} \
@@ -123,6 +125,7 @@ test.fuzzer.${1}: $$(TEST_BIN_DIR)/fuzzer_${1} src/tests/fuzzer-corpus/${1} $$(F
 endif
 
 test.fuzzer.${1}.merge: $$(TEST_BIN_DIR)/fuzzer_${1} | src/tests/fuzzer-corpus/${1}
+	@echo BBBBBBBBBBBBBBBBBBBBB 3
 	@echo MERGE-FUZZER-CORPUS ${1}
 	$${Q}[ -e "src/tests/fuzzer-corpus/${1}_new" ] || mkdir "src/tests/fuzzer-corpus/${1}_new"
 	$${Q}$$(TEST_BIN_NO_TIMEOUT)/fuzzer_${1} \

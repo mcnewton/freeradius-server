@@ -206,9 +206,9 @@ ANALYZE.c       := @clang_path@
 #  the additional overhead.
 #
 ifneq "$(findstring sanitize,$(CFLAGS))" ""
-TEST_TIMEOUT        := 600
+TEST_TIMEOUT        := 120
 else
-TEST_TIMEOUT        := 300
+TEST_TIMEOUT        := 120
 endif
 
 TEST_BIN_DIR        = ./$(BUILD_DIR)/bin/local
