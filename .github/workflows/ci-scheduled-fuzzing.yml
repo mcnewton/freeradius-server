@@ -244,6 +244,18 @@ jobs:
         make -j `nproc`
         make -j `nproc` test.unit
 
+    - name: Run sleeping tests
+      run: |
+        REMAINING_TIME=$(( $TOTAL_RUNTIME + $START_TIMESTAMP - `date +%s` ))
+        echo "Started sleeping at $START_TIMESTAMP for $TOTAL_RUNTIME secs. Fuzzing ${{ steps.pick_commit.outputs.commit_id }}:$PROTOCOL for $REMAINING_TIME secs"
+        [[ "$REMAINING_TIME" -lt 1 ]] && exit 1
+        date
+        sleep 900 || :
+        date
+      env:
+        GITHUB_REF: "${{ github.ref }}"
+        START_TIMESTAMP: "${{ needs.set-matrix.outputs.starttimestamp }}"
+
     - name: Run fuzzer tests
       run: |
         REMAINING_TIME=$(( $TOTAL_RUNTIME + $START_TIMESTAMP - `date +%s` ))
