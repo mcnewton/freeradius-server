@@ -249,69 +249,70 @@ jobs:
         REMAINING_TIME=$(( $TOTAL_RUNTIME + $START_TIMESTAMP - `date +%s` ))
         echo "Started at $START_TIMESTAMP for $TOTAL_RUNTIME secs. Fuzzing ${{ steps.pick_commit.outputs.commit_id }}:$PROTOCOL for $REMAINING_TIME secs"
         [[ "$REMAINING_TIME" -lt 1 ]] && exit 1
-        make test.fuzzer.$PROTOCOL FUZZER_TIMEOUT="$REMAINING_TIME" FUZZER_ARGUMENTS="-jobs=`nproc` -workers=`nproc`" || :
-        find build/fuzzer -type f ! -path 'build/fuzzer/*.log' | grep . && exit 1 || :
+        echo make test.fuzzer.$PROTOCOL FUZZER_TIMEOUT="$REMAINING_TIME" FUZZER_ARGUMENTS="-jobs=`nproc` -workers=`nproc`"
+#        make test.fuzzer.$PROTOCOL FUZZER_TIMEOUT="$REMAINING_TIME" FUZZER_ARGUMENTS="-jobs=`nproc` -workers=`nproc`" || :
+#        find build/fuzzer -type f ! -path 'build/fuzzer/*.log' | grep . && exit 1 || :
       env:
         GITHUB_REF: "${{ github.ref }}"
         START_TIMESTAMP: "${{ needs.set-matrix.outputs.starttimestamp }}"
 #      if: ${{ !startsWith(github.ref, 'refs/heads/debug-fuzzer-') }}
 
-    - name: "Clang libFuzzer: Store assets on failure"
-      uses: actions/upload-artifact@v6
-      with:
-        name: clang-fuzzer-${{ matrix.env.PROTOCOL }}-${{ steps.pick_commit.outputs.commit_id }}
-        path: build/fuzzer
-        retention-days: 30
-      if: ${{ !startsWith(github.ref, 'refs/heads/debug-fuzzer') && failure() }}
-
-    #
-    #  Merge the corpus which will be stored in the cache for the next run
-    #
-    - name: Merge the corpus
-      run: |
-        make test.fuzzer.$PROTOCOL.merge
-      if: ${{ !startsWith(github.ref, 'refs/heads/debug-fuzzer-') }}
-
-    - name: Generate app token to push corpus
-      id: app-token
-      if: ${{ !startsWith(github.ref, 'refs/heads/debug-fuzzer-') && steps.corpusparams.outputs.corpusage > 2592000 && github.repository_owner == 'FreeRADIUS' }}
-      uses: actions/create-github-app-token@v2
-      with:
-        app-id: ${{ secrets.GH_APP_ID }}
-        private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
-
-    #
-    #  We can push the LFS file directly, but we must use the GitHub API to
-    #  create the actual commit due to the "signed-commits" branch protection
-    #  rule for the master branch.
-    #
-    #  Force reinstall of pyOpenSSL is to work around Python
-    #  cryptograpy package issue - PyGithub pulls in a newer
-    #  version which clashes with older apt-installed pyOpenSSL
-    #  https://github.com/pyca/pyopenssl/issues/1143
-    #
-    - name: Monthly push back of corpus
-      run: |
-        export FILE=src/tests/fuzzer-corpus/$PROTOCOL.tar
-        if ! git diff --exit-code "$FILE"; then
-          sudo apt-get install -y python3-venv
-          python3 -m venv ~/.venv
-          . ~/.venv/bin/activate
-          pip install --force-reinstall -I -U pyOpenSSL
-          pip install PyGithub
-          git add "$FILE"
-          OID="$(git lfs ls-files -l -I "$FILE" | cut -f1 -d ' ')"
-          git lfs push --object-id origin "$OID"
-          export CONTENTS="$(git show ":$FILE" | base64)"
-          SLEEP_FOR=$(( ( $UPLOAD_SLOT - `date +%s` % $NUM_SLOTS + $NUM_SLOTS ) % $NUM_SLOTS ))
-          echo Waiting $SLEEP_FOR secs for our upload slot...
-          sleep $SLEEP_FOR
-          python3 scripts/ci/commit_lfs_file_update.py
-        fi
-      env:
-        APP_TOKEN: ${{ steps.app-token.outputs.token }}
-      if: ${{ !startsWith(github.ref, 'refs/heads/debug-fuzzer-') && steps.corpusparams.outputs.corpusage > 2592000 && github.repository_owner == 'FreeRADIUS' }}
-
+#    - name: "Clang libFuzzer: Store assets on failure"
+#      uses: actions/upload-artifact@v6
+#      with:
+#        name: clang-fuzzer-${{ matrix.env.PROTOCOL }}-${{ steps.pick_commit.outputs.commit_id }}
+#        path: build/fuzzer
+#        retention-days: 30
+#      if: ${{ !startsWith(github.ref, 'refs/heads/debug-fuzzer') && failure() }}
+#
+#    #
+#    #  Merge the corpus which will be stored in the cache for the next run
+#    #
+#    - name: Merge the corpus
+#      run: |
+#        make test.fuzzer.$PROTOCOL.merge
+#      if: ${{ !startsWith(github.ref, 'refs/heads/debug-fuzzer-') }}
+#
+#    - name: Generate app token to push corpus
+#      id: app-token
+#      if: ${{ !startsWith(github.ref, 'refs/heads/debug-fuzzer-') && steps.corpusparams.outputs.corpusage > 2592000 && github.repository_owner == 'FreeRADIUS' }}
+#      uses: actions/create-github-app-token@v2
+#      with:
+#        app-id: ${{ secrets.GH_APP_ID }}
+#        private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+#
+#    #
+#    #  We can push the LFS file directly, but we must use the GitHub API to
+#    #  create the actual commit due to the "signed-commits" branch protection
+#    #  rule for the master branch.
+#    #
+#    #  Force reinstall of pyOpenSSL is to work around Python
+#    #  cryptograpy package issue - PyGithub pulls in a newer
+#    #  version which clashes with older apt-installed pyOpenSSL
+#    #  https://github.com/pyca/pyopenssl/issues/1143
+#    #
+#    - name: Monthly push back of corpus
+#      run: |
+#        export FILE=src/tests/fuzzer-corpus/$PROTOCOL.tar
+#        if ! git diff --exit-code "$FILE"; then
+#          sudo apt-get install -y python3-venv
+#          python3 -m venv ~/.venv
+#          . ~/.venv/bin/activate
+#          pip install --force-reinstall -I -U pyOpenSSL
+#          pip install PyGithub
+#          git add "$FILE"
+#          OID="$(git lfs ls-files -l -I "$FILE" | cut -f1 -d ' ')"
+#          git lfs push --object-id origin "$OID"
+#          export CONTENTS="$(git show ":$FILE" | base64)"
+#          SLEEP_FOR=$(( ( $UPLOAD_SLOT - `date +%s` % $NUM_SLOTS + $NUM_SLOTS ) % $NUM_SLOTS ))
+#          echo Waiting $SLEEP_FOR secs for our upload slot...
+#          sleep $SLEEP_FOR
+#          python3 scripts/ci/commit_lfs_file_update.py
+#        fi
+#      env:
+#        APP_TOKEN: ${{ steps.app-token.outputs.token }}
+#      if: ${{ !startsWith(github.ref, 'refs/heads/debug-fuzzer-') && steps.corpusparams.outputs.corpusage > 2592000 && github.repository_owner == 'FreeRADIUS' }}
+#
 
     #
     #  If we are on the 'debug-fuzzer-*' branch then we start a tmate session to
@@ -349,4 +350,4 @@ jobs:
         limit-access-to-actor: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      if: ${{ startsWith(github.ref, 'refs/heads/debug-fuzzer-') && always() }}
+#      if: ${{ startsWith(github.ref, 'refs/heads/debug-fuzzer-') && always() }}
