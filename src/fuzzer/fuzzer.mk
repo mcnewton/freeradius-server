@@ -109,16 +109,8 @@ else
 test.fuzzer.$(PROTOCOL): $(TEST_BIN_DIR)/fuzzer_$(PROTOCOL) | src/tests/fuzzer-corpus/$(PROTOCOL)
 	@echo TEST-FUZZER $(PROTOCOL) for $(FUZZER_TIMEOUT)s
 	@mkdir -p $(BUILD_DIR)/fuzzer
-	${Q}if ! $(TEST_BIN_NO_TIMEOUT)/fuzzer_$(PROTOCOL) \
-		-artifact_prefix="$(FUZZER_ARTIFACTS)/$(PROTOCOL)/" \
-		-max_len=512 $(FUZZER_ARGUMENTS) \
-		-max_total_time=$(FUZZER_TIMEOUT) \
-		-D share/dictionary \
-		src/tests/fuzzer-corpus/$(PROTOCOL) > $(BUILD_DIR)/fuzzer/$(PROTOCOL).log 2>&1; then \
-		tail -20 $(BUILD_DIR)/fuzzer/$(PROTOCOL).log; \
-		echo FAILED; \
-		exit 1; \
-	fi
+	echo FAILED
+	exit 1
 endif
 
 test.fuzzer.$(PROTOCOL).merge: | src/tests/fuzzer-corpus/$(PROTOCOL)
