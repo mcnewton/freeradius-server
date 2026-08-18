@@ -251,6 +251,7 @@ jobs:
         [[ "$REMAINING_TIME" -lt 1 ]] && exit 1
         make test.fuzzer.$PROTOCOL FUZZER_TIMEOUT="$REMAINING_TIME" FUZZER_ARGUMENTS="-jobs=`nproc` -workers=`nproc`" || :
         find build/fuzzer -type f ! -path 'build/fuzzer/*.log' | grep . && exit 1 || :
+        ! grep -sqr FAILED build/fuzzer/*.log
       env:
         GITHUB_REF: "${{ github.ref }}"
         START_TIMESTAMP: "${{ needs.set-matrix.outputs.starttimestamp }}"
