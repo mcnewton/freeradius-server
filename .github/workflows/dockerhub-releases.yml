@@ -154,7 +154,7 @@ jobs:
     if: |
       github.ref_name == 'v3.2.x'
       && needs.get_build_info.outputs.do_build == 'true'
-      && github.repository_owner == 'FreeRADIUS'
+#      && github.repository_owner == 'FreeRADIUS'
 
     strategy:
       matrix:
@@ -224,7 +224,7 @@ jobs:
       && (needs.build_docker_images.result == 'skipped'
           || needs.build_docker_images.result == 'success')
       && needs.get_build_info.outputs.do_manifests == 'true'
-      && github.repository_owner == 'FreeRADIUS'
+#      && github.repository_owner == 'FreeRADIUS'
 
     strategy:
       matrix:
@@ -278,7 +278,7 @@ jobs:
       && (needs.build_docker_images.result == 'skipped'
           || needs.build_docker_images.result == 'success')
       && needs.get_build_info.outputs.update_latest == 'true'
-      && github.repository_owner == 'FreeRADIUS'
+#      && github.repository_owner == 'FreeRADIUS'
 
     strategy:
       matrix:
